@@ -15,39 +15,16 @@ interface AgentListing {
   category: string
 }
 
-// Static demo listings — in production these come from GET /api/v1/agents
+// Live agents — payment goes on-chain to each agent's devnet wallet.
+// Agent delivers real data after Helius detects the transfer.
 const DEMO_LISTINGS: AgentListing[] = [
-  {
-    id: 'stock-agent',
-    role: 'worker',
-    priceLamports: 1_000_000, // 0.001 SOL
-    label: 'Stock Price Feed',
-    description: 'Live equity prices from multiple exchanges. Returns JSON with bid/ask/last.',
-    category: 'Finance',
-  },
-  {
-    id: 'claude-agent',
-    role: 'worker',
-    priceLamports: 10_000_000, // 0.01 SOL
-    label: 'AI Inference (Claude)',
-    description: 'Submit any prompt. Agent calls Claude Sonnet and returns the response.',
-    category: 'AI',
-  },
   {
     id: 'weather-agent',
     role: 'worker',
-    priceLamports: 500_000, // 0.0005 SOL
-    label: 'Weather Data',
-    description: 'Current conditions + 5-day forecast for any city.',
+    priceLamports: 500_000, // 0.0005 SOL (~$0.07)
+    label: 'Live Weather',
+    description: 'Real-time conditions for any city — temperature, humidity, wind, forecast. Powered by open-meteo.com. No API key required.',
     category: 'Data',
-  },
-  {
-    id: 'helius-agent',
-    role: 'monitor',
-    priceLamports: 100_000, // 0.0001 SOL
-    label: 'Wallet Monitor (Helius)',
-    description: 'Watch a Solana address for incoming transfers. Returns the first payment detected.',
-    category: 'Solana',
   },
 ]
 
@@ -108,7 +85,7 @@ export default function MarketplacePage() {
 
         {/* Category filter */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {['All', 'Finance', 'AI', 'Data', 'Solana'].map(cat => (
+          {['All', 'Data'].map(cat => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -139,8 +116,8 @@ export default function MarketplacePage() {
               <p>Your Phantom wallet holds the SOL. No account, no signup.</p>
             </div>
             <div>
-              <p className="text-white font-medium mb-1">2. Pay via Anchor Escrow</p>
-              <p>Funds lock in an on-chain escrow. Released only when the agent delivers.</p>
+              <p className="text-white font-medium mb-1">2. Pay on Devnet</p>
+              <p>Phantom signs a direct SOL transfer on Solana devnet. No subscription, no API key.</p>
             </div>
             <div>
               <p className="text-white font-medium mb-1">3. Agent Delivers</p>

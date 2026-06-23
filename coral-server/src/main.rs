@@ -64,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/api/v1/solana-pay", api::solana_pay::routes())
         .nest("/api/v1/pay-demo", api::pay_demo::routes())
         .nest("/api/v1/coralos", api::coralos::routes())
+        .nest("/api/v1/weather", api::weather::routes())
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

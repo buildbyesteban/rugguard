@@ -19,54 +19,66 @@ export default function ResultPage() {
   const [polling, setPolling] = useState(true)
 
   useEffect(() => {
-    if (!agentId) return
+    if (!agentId || !prompt) return
 
     let resolved = false
 
-    // Poll SharedState for the agent's response key
-    const interval = setInterval(async () => {
-      if (resolved) return
+    const triggerAndPoll = async () => {
+      const city = decodeURIComponent(prompt)
+
+      // 1. Call coral-server weather endpoint directly — real data, no polling needed
       try {
-        const client = getClient()
-        const allState = await client.getAllState()
-        const entry = allState[`result:${agentId}`]
-        if (entry) {
-          setResult(JSON.stringify(entry.value, null, 2))
+        const base = process.env.NEXT_PUBLIC_CORAL_SERVER ?? 'http://localhost:8080'
+        const resp = await fetch(`${base}/api/v1/weather`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ city }),
+        })
+        if (resp.ok) {
+          const json = await resp.json()
+          setResult(JSON.stringify(json.data, null, 2))
+          setPolling(false)
+          resolved = true
+          return
+        }
+      } catch {
+        // coral-server not running — fall through to SharedState poll
+      }
+
+      // 2. Fallback: poll SharedState in case another path wrote the result
+      const interval = setInterval(async () => {
+        if (resolved) return
+        try {
+          const client = getClient()
+          const allState = await client.getAllState()
+          const entry = allState[`result:${agentId}`]
+          if (entry) {
+            setResult(typeof entry.value === 'string'
+              ? entry.value
+              : JSON.stringify(entry.value, null, 2))
+            setPolling(false)
+            resolved = true
+            clearInterval(interval)
+          }
+        } catch { /* ignore */ }
+      }, 1500)
+
+      // 3. Hard timeout: if coral-server is down, show a clear message
+      setTimeout(() => {
+        if (!resolved) {
+          setResult(JSON.stringify({
+            error: 'coral-server not running',
+            hint: 'Run `cd coral-server && cargo run` then refresh',
+            city,
+          }, null, 2))
           setPolling(false)
           resolved = true
           clearInterval(interval)
         }
-      } catch {
-        // coral-server not running — demo fallback handles it
-      }
-    }, 1000)
-
-    // Demo fallback: show mock result after 3 seconds if coral-server not running
-    const demo = setTimeout(() => {
-      if (!resolved) {
-        const mockData =
-          agentId === 'stock-agent'
-            ? { AAPL: 189.42, MSFT: 412.11, source: 'demo-agent' }
-            : agentId === 'weather-agent'
-            ? { city: 'London', temp: '18°C', condition: 'Partly cloudy', source: 'demo-agent' }
-            : agentId === 'claude-agent'
-            ? { response: 'This is a demo Claude response. Deploy coral-server for live inference.', prompt }
-            : { response: 'Agent delivered successfully', prompt, source: 'demo-agent' }
-
-        setResult(JSON.stringify({
-          ...mockData,
-          delivered_at: new Date().toISOString(),
-        }, null, 2))
-        setPolling(false)
-        resolved = true
-        clearInterval(interval)
-      }
-    }, 3000)
-
-    return () => {
-      clearInterval(interval)
-      clearTimeout(demo)
+      }, 8000)
     }
+
+    triggerAndPoll()
   }, [agentId, prompt])
 
   return (

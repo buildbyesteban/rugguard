@@ -9,11 +9,15 @@ import { ArrowLeft, Zap, Shield } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { getClient } from '@/lib/coral'
 
-const AGENT_META: Record<string, { label: string; priceLamports: number; placeholder: string }> = {
-  'stock-agent':   { label: 'Stock Price Feed',      priceLamports: 1_000_000,  placeholder: 'AAPL' },
-  'claude-agent':  { label: 'AI Inference (Claude)', priceLamports: 10_000_000, placeholder: 'Summarise the Solana whitepaper in 3 bullets' },
-  'weather-agent': { label: 'Weather Data',          priceLamports: 500_000,    placeholder: 'London' },
-  'helius-agent':  { label: 'Wallet Monitor',        priceLamports: 100_000,    placeholder: '7xKF...' },
+const AGENT_META: Record<string, { label: string; priceLamports: number; placeholder: string; sellerWallet: string }> = {
+  // weather-agent: real Rust WeatherStrategy on coral-server, pays 0.0005 SOL on devnet
+  'weather-agent': {
+    label: 'Live Weather',
+    priceLamports: 500_000,
+    placeholder: 'London, Tokyo, New York…',
+    // Replace with your own devnet wallet: `solana-keygen new` then `solana airdrop 1`
+    sellerWallet: process.env.NEXT_PUBLIC_SELLER_WALLET ?? '7xKFqjHEsLqQFmXSnqmWTBPEHJLCgtcf7fUJ4E4s7fQ1',
+  },
 }
 
 type TxStatus = 'idle' | 'building' | 'signing' | 'broadcasting' | 'done' | 'error'
@@ -47,10 +51,9 @@ export default function PayPage() {
         // coral-server may not be running — continue with demo flow
       }
 
-      // 2. Build a SOL transfer transaction
-      // In production this would be an Anchor escrow deposit instruction.
-      // For demo/devnet we do a direct transfer to a well-known devnet address.
-      const DEMO_SELLER = new PublicKey('7xKFqjHEsLqQFmXSnqmWTBPEHJLCgtcf7fUJ4E4s7fQ1')
+      // 2. Build SOL transfer to the agent's devnet wallet.
+      // Helius watches this wallet; when it detects the transfer the agent delivers.
+      const DEMO_SELLER = new PublicKey(meta.sellerWallet)
 
       const tx = new Transaction().add(
         SystemProgram.transfer({
@@ -114,7 +117,7 @@ export default function PayPage() {
             </div>
             <div className="text-right space-y-1">
               <div className="flex items-center gap-1.5 text-xs text-gray-400 justify-end">
-                <Shield size={11} /> Anchor escrow
+                <Shield size={11} /> Solana devnet
               </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-400 justify-end">
                 <Zap size={11} /> &lt; 2s delivery

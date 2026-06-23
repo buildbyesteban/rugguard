@@ -9,4 +9,5 @@ pub mod messaging;
 pub mod pay_demo;
 pub mod shared_state;
 pub mod solana_pay;
+pub mod weather;
 pub mod workflows;
