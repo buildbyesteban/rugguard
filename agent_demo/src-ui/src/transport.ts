@@ -218,6 +218,11 @@ async function httpDispatch<T>(cmd: string, args: Args): Promise<T> {
     case 'coralos_mcp_status':
       return httpGet(`/api/v1/coralos/mcp/status/${(args as Record<string, string>).name}`)
 
+    // ── Weather agent ─────────────────────────────────────────────────────────
+    case 'weather_query':
+      return httpPost('/api/v1/weather', { city: (args as Record<string, string>).city })
+        .then((res: unknown) => (res as { data: unknown }).data) as Promise<T>
+
     // ── Python agent (Tauri-only — no-op in web mode) ────────────────────────
     case 'python_agent_status':
       return Promise.resolve(false as unknown as T)

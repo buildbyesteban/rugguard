@@ -97,7 +97,7 @@ interface CoralSessionExtended extends CoralSession {
 
 type AgentTuple = [string, AgentState];
 type AgentWithMeta = [string, AgentState, AgentMeta];
-type Tab = "local" | "coralos" | "messaging" | "shared-state" | "workflows" | "solana-pay" | "pay-demo" | "payment-flows" | "python-agent";
+type Tab = "local" | "coralos" | "messaging" | "shared-state" | "workflows" | "solana-pay" | "pay-demo" | "payment-flows" | "python-agent" | "weather";
 
 interface PythonAgentEvent {
   type: string;
@@ -154,6 +154,12 @@ function App() {
   const [pyAmount, setPyAmount] = useState("0.5");
   const [pyHeliusKey, setPyHeliusKey] = useState("");
   const [pyRpcUrl, setPyRpcUrl] = useState("");
+
+  // --- Weather agent state ---
+  const [weatherCity, setWeatherCity] = useState("London");
+  const [weatherResult, setWeatherResult] = useState<Record<string, unknown> | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState("");
   const [pyWsUrl, setPyWsUrl] = useState("");
   const [pyMode, setPyMode] = useState("standalone");
   const [pyRunning, setPyRunning] = useState(false);
@@ -537,6 +543,22 @@ function App() {
     }
   };
 
+  // --- Weather handler ---
+  const handleWeatherQuery = async () => {
+    if (!weatherCity.trim()) return;
+    setWeatherLoading(true);
+    setWeatherError("");
+    setWeatherResult(null);
+    try {
+      const data = await invoke<Record<string, unknown>>("weather_query", { city: weatherCity.trim() });
+      setWeatherResult(data);
+    } catch (e) {
+      setWeatherError(String(e));
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
   // --- Solana Pay handlers ---
   const handleCreateSolanaPayAgent = async () => {
     try {
@@ -673,6 +695,7 @@ function App() {
           { key: "pay-demo",       label: "⚡ Pay Demo"    },
           { key: "payment-flows",  label: "Payment Flows"  },
           { key: "python-agent",   label: "🐍 Python Agent"},
+          { key: "weather",        label: "🌤 Weather Agent"},
         ].map((t) => (
           <button
             key={t.key}
@@ -1690,6 +1713,93 @@ function App() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "weather" && (
+        <div className="space-y-5">
+          <div className="card space-y-4">
+            <div>
+              <h2 className="section-title" style={{marginBottom:"4px"}}>Weather Agent</h2>
+              <p style={{fontSize:"12px",color:"var(--text-dim)"}}>
+                Real-time data from open-meteo.com — no API key. Runs the same{" "}
+                <span className="mono">WeatherStrategy</span> that backs the web marketplace.
+                Tauri calls Rust directly; no coral-server needed.
+              </p>
+            </div>
+
+            <div className="flex gap-3 items-end">
+              <label className="flex flex-col flex-1" style={{fontSize:"11px",color:"var(--text-dim)"}}>
+                City
+                <input
+                  className="input-field"
+                  value={weatherCity}
+                  onChange={e => setWeatherCity(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleWeatherQuery()}
+                  placeholder="London, Tokyo, New York…"
+                />
+              </label>
+              <button
+                className="btn-primary"
+                onClick={handleWeatherQuery}
+                disabled={weatherLoading || !weatherCity.trim()}
+                style={{minWidth:"120px"}}
+              >
+                {weatherLoading ? "Fetching…" : "Get Weather"}
+              </button>
+            </div>
+
+            {weatherError && (
+              <div className="card" style={{background:"rgba(231,76,60,0.08)",border:"1px solid rgba(231,76,60,0.3)"}}>
+                <p style={{fontSize:"12px",color:"#e74c3c"}}>{weatherError}</p>
+              </div>
+            )}
+
+            {weatherResult && (
+              <div className="card" style={{background:"rgba(30,215,96,0.05)",border:"1px solid rgba(30,215,96,0.2)"}}>
+                <div className="flex items-baseline gap-3 mb-3">
+                  <span style={{fontSize:"24px",fontWeight:700,color:"var(--green,#2ecc71)"}}>
+                    {typeof weatherResult.temperature_c === "number"
+                      ? `${weatherResult.temperature_c}°C`
+                      : "—"}
+                  </span>
+                  <span style={{fontSize:"14px",color:"var(--text-dim)"}}>
+                    {String(weatherResult.condition ?? "")}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mb-3" style={{fontSize:"12px"}}>
+                  <div>
+                    <span style={{color:"var(--text-dim)"}}>City</span>
+                    <div style={{fontWeight:600}}>{String(weatherResult.city ?? "")}</div>
+                  </div>
+                  <div>
+                    <span style={{color:"var(--text-dim)"}}>Humidity</span>
+                    <div style={{fontWeight:600}}>{weatherResult.humidity_pct}%</div>
+                  </div>
+                  <div>
+                    <span style={{color:"var(--text-dim)"}}>Wind</span>
+                    <div style={{fontWeight:600}}>{weatherResult.wind_mph} mph</div>
+                  </div>
+                </div>
+                <details>
+                  <summary style={{fontSize:"11px",color:"var(--text-dim)",cursor:"pointer"}}>Raw JSON</summary>
+                  <pre className="mono" style={{fontSize:"11px",marginTop:"8px",overflowX:"auto",whiteSpace:"pre-wrap"}}>
+                    {JSON.stringify(weatherResult, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
+
+            <div className="card" style={{background:"rgba(153,69,255,0.06)",border:"1px solid rgba(153,69,255,0.25)"}}>
+              <p style={{fontSize:"12px",color:"var(--text-dim)"}}>
+                <strong style={{color:"var(--text-primary)"}}>How the payment rail works:</strong>{" "}
+                The web frontend at <span className="mono">localhost:3000</span> sends 0.0005 SOL on
+                Solana devnet, then calls <span className="mono">POST /api/v1/weather</span> on
+                coral-server. This Tauri tab calls the same Rust strategy natively —
+                no HTTP round-trip.
+              </p>
             </div>
           </div>
         </div>

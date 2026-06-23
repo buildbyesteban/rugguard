@@ -551,6 +551,49 @@ async fn x402_demo_payment(
     Ok(result)
 }
 
+// --- Weather agent command ---
+
+/// Query live weather for any city using WeatherStrategy (open-meteo.com, no API key).
+///
+/// Creates a transient AgentState, runs WeatherStrategy.handle_message, and
+/// records the result as an action on the "weather-agent" if it exists in the manager.
+#[tauri::command]
+async fn weather_query(
+    state: State<'_, AppState>,
+    city: String,
+) -> Result<serde_json::Value, String> {
+    use agent_core::{solana_pay::WeatherStrategy, strategy::Strategy};
+    use std::sync::{Arc, Mutex};
+
+    let agent_state = Arc::new(Mutex::new(AgentState {
+        is_running: true,
+        actions: vec![],
+        rpc_endpoint: String::new(),
+        network: "devnet".to_string(),
+        strategy: "weather".to_string(),
+    }));
+
+    let strategy = WeatherStrategy::new();
+    let text = serde_json::json!({ "city": city }).to_string();
+    let start = std::time::Instant::now();
+    let result = strategy.handle_message(&text, Arc::clone(&agent_state)).await;
+    let latency_ms = start.elapsed().as_millis() as u64;
+
+    state.manager.record_action(
+        "weather-agent",
+        AgentAction {
+            timestamp: Utc::now(),
+            action_type: "data-delivered".to_string(),
+            details: format!("weather for {} ({} ms)", city, latency_ms),
+            tx_signature: None,
+            slot: None,
+            latency_ms,
+        },
+    );
+
+    serde_json::from_str(&result).map_err(|_| result)
+}
+
 // --- Pay Demo commands ---
 
 #[tauri::command]
@@ -773,6 +816,7 @@ fn main() {
             solana_pay_validate,
             x402_parse_challenge,
             x402_demo_payment,
+            weather_query,
             create_triton_monitor_agent,
             generate_solana_pay_url,
             get_pending_payment,
