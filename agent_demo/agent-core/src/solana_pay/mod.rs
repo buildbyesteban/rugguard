@@ -6,7 +6,7 @@ pub mod validation;
 
 pub use monitor::TritonPaymentMonitorStrategy;
 pub use payment::{demo_payment_flow, parse_402_response, PaymentChallenge, PaymentProtocol, DemoPaymentResult};
-pub use strategies::{PaymentStrategy, TransferStrategy};
+pub use strategies::{PaymentStrategy, TransferStrategy, WeatherStrategy};
 pub use url::{encode_transfer_url, encode_transaction_request_url, parse_url, ParsedUrl, TransferUrlFields, TransactionRequestUrlFields};
 pub use validation::{validate_transfer, ValidationResult};
 

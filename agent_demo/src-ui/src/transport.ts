@@ -209,6 +209,15 @@ async function httpDispatch<T>(cmd: string, args: Args): Promise<T> {
     case 'coralos_list_sessions':
       return httpGet(`/api/v1/coralos/sessions/${args.namespace}`)
 
+    case 'coralos_mcp_join':
+      return httpPost('/api/v1/coralos/mcp/join', {
+        connection_url: (args as Record<string, string>).connectionUrl,
+        agent_name: (args as Record<string, string>).agentName,
+      })
+
+    case 'coralos_mcp_status':
+      return httpGet(`/api/v1/coralos/mcp/status/${(args as Record<string, string>).name}`)
+
     // ── Python agent (Tauri-only — no-op in web mode) ────────────────────────
     case 'python_agent_status':
       return Promise.resolve(false as unknown as T)

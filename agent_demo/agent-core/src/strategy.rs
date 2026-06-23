@@ -18,6 +18,16 @@ pub trait Strategy: Send + Sync {
     async fn run(&self, state: Arc<Mutex<AgentState>>);
     /// Short, stable identifier used to label the agent's strategy field.
     fn name(&self) -> &'static str;
+
+    /// Handle an inbound Coral mention and return a reply string.
+    /// Default: echo back. Override in payment strategies for real dispatch.
+    async fn handle_message(
+        &self,
+        text: &str,
+        _state: Arc<Mutex<AgentState>>,
+    ) -> String {
+        format!("agent received: {}", &text[..text.len().min(120)])
+    }
 }
 
 /// Default strategy: polls the Solana RPC for the current slot every 5 seconds.

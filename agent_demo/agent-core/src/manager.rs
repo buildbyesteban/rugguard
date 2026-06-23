@@ -185,6 +185,12 @@ impl AgentManager {
         }
     }
 
+    /// Return a live Arc reference to the agent, or `None` if not found.
+    pub fn get_agent(&self, id: &str) -> Option<Arc<Agent>> {
+        let agents = self.agents.lock().expect("agent map lock poisoned");
+        agents.get(id).map(Arc::clone)
+    }
+
     /// Snapshot the current state of a single agent, or `None` if not found.
     pub fn get_agent_state(&self, id: &str) -> Option<AgentState> {
         let agents = self.agents.lock().expect("agent map lock poisoned");

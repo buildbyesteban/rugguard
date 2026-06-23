@@ -129,6 +129,16 @@ impl Agent {
     pub fn stop(&self) {
         self.state.lock().expect("agent state lock poisoned").is_running = false;
     }
+
+    /// Return the live strategy so callers can dispatch messages to it.
+    pub fn get_strategy(&self) -> Arc<dyn Strategy> {
+        Arc::clone(&*self.strategy.lock().expect("strategy lock poisoned"))
+    }
+
+    /// Return the shared state Arc so strategy.handle_message can mutate it.
+    pub fn state_arc(&self) -> Arc<Mutex<AgentState>> {
+        Arc::clone(&self.state)
+    }
 }
 
 #[cfg(test)]

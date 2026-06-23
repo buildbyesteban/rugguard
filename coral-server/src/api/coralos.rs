@@ -145,6 +145,13 @@ async fn mcp_join(
                 let mgr = mgr.clone();
                 let name = name.clone();
                 async move {
+                    let reply = if let Some(agent) = mgr.get_agent(&name) {
+                        let strategy = agent.get_strategy();
+                        let state = agent.state_arc();
+                        strategy.handle_message(&mention.text, state).await
+                    } else {
+                        format!("agent {} not found in manager", name)
+                    };
                     mgr.record_action(
                         &name,
                         agent_core::AgentAction {
@@ -156,7 +163,7 @@ async fn mcp_join(
                             latency_ms: 0,
                         },
                     );
-                    format!("rust-agent={} acknowledged", name)
+                    reply
                 }
             })
             .await;

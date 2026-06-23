@@ -71,6 +71,31 @@ The registry is:
 - **Probe-tested** — CI hits each endpoint to verify it returns a valid 402 challenge
 - **Agent-optimized** — descriptions and usage notes are written for AI consumption, not human marketing
 
+## Coral Protocol Skills (claude-code plugin)
+
+The `coral-skill-set` plugin (`Coral-Protocol/coral-skill-set`) adds four slash-command skills to Claude Code for running multi-agent swarms via the Coral Protocol server.
+
+Install with:
+
+```sh
+/plugin marketplace add Coral-Protocol/coral-skill-set
+```
+
+### Skills
+
+| Skill | Trigger | What it does |
+|-------|---------|--------------|
+| `coral-setup` | "install coral", "start coral", "coral setup" | Clones and starts the Coral server (Kotlin/Gradle, port 5555). Applies the Anthropic schema patch that strips out-of-range `minimum`/`maximum` integer bounds the API rejects. |
+| `coral-agent-swarm` | "spawn agents", "multi-agent", "coral orchestration" | Turns Claude Code into the orchestrator. Spawns agents via HTTP, creates threads, delegates parallel subtasks, and manages the communication loop. |
+| `coral-built-in-agent-setup` | "install agents", "set up hermes/claude-code agent" | Installs the built-in agent binaries: `claude-code`, `hermes`, `openclaw`, `puppet`. |
+| `coralize-your-agent` | "coralize", "connect my agent to coral" | Connects an existing agent project into the Coral network. Currently supports Mastra (TypeScript); produces a wrapper under `~/.coral/agents/<name>/`. |
+
+### Architecture notes
+
+- The Coral server is model-agnostic — any agent binary registered as a `local_agent` in `config.toml` can participate.
+- These skills assume Claude Code as the orchestrator and Anthropic's API for built-in agents. OpenAI-based agents can join sessions but require a manually written `coral-agent.toml` + `startup.sh` wrapper.
+- `coral_mcp.rs` and `coralos.rs` in this repo are the Rust-side counterparts: `coral_mcp.rs` drives the MCP tool loop, `coralos.rs` is the HTTP client that talks to the Coral server at its `/api/v1/` endpoints.
+
 ## Contributing to Skills
 
 ### Agent instructions (this repo)

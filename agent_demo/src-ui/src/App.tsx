@@ -135,12 +135,18 @@ function App() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
   // --- CoralOS state ---
-  const [coralUrl, setCoralUrl] = useState("http://localhost:8080");
+  const [coralUrl, setCoralUrl] = useState("http://localhost:5555");
   const [coralToken, setCoralToken] = useState("");
   const [coralNamespace, setCoralNamespace] = useState("default");
   const [coralSessions, setCoralSessions] = useState<CoralSessionExtended[]>([]);
   const [selectedCoralSession, setSelectedCoralSession] = useState<string | null>(null);
   const [coralLoading, setCoralLoading] = useState(false);
+
+  // --- MCP join state ---
+  const [mcpConnectionUrl, setMcpConnectionUrl] = useState('');
+  const [mcpAgentName, setMcpAgentName] = useState('');
+  const [mcpJoining, setMcpJoining] = useState(false);
+  const [mcpStatuses, setMcpStatuses] = useState<Record<string, boolean>>({});
 
   // --- Python side-car agent state ---
   const [pyAgent, setPyAgent] = useState("helius-monitor");
@@ -519,6 +525,18 @@ function App() {
     await refreshCoral();
   };
 
+  const handleMcpJoin = async () => {
+    if (!mcpConnectionUrl.trim() || !mcpAgentName.trim()) return;
+    setMcpJoining(true);
+    try {
+      await invoke('coralos_mcp_join', { connectionUrl: mcpConnectionUrl.trim(), agentName: mcpAgentName.trim() });
+      const active = await invoke<boolean>('coralos_mcp_status', { name: mcpAgentName.trim() });
+      setMcpStatuses(p => ({ ...p, [mcpAgentName.trim()]: active }));
+    } finally {
+      setMcpJoining(false);
+    }
+  };
+
   // --- Solana Pay handlers ---
   const handleCreateSolanaPayAgent = async () => {
     try {
@@ -611,15 +629,18 @@ function App() {
   const actionBadgeClass = (type: string) => {
     const key = type.replace(/-/g, "-");
     const known: Record<string, string> = {
-      "payment-received": "type-payment-received",
-      "data-delivered":   "type-data-delivered",
-      "data-received":    "type-data-received",
-      "data-request":     "type-data-request",
-      "url-generated":    "type-url-generated",
-      "strategy-start":   "type-strategy-start",
-      "poll-tick":        "type-poll-tick",
-      "poll-error":       "type-poll-error",
-      "rpc-error":        "type-rpc-error",
+      "payment-received":      "type-payment-received",
+      "data-delivered":        "type-data-delivered",
+      "data-received":         "type-data-received",
+      "data-request":          "type-data-request",
+      "url-generated":         "type-url-generated",
+      "coral-mention":         "type-url-generated",
+      "coral-url-generated":   "type-data-delivered",
+      "coral-payment-result":  "type-payment-received",
+      "strategy-start":        "type-strategy-start",
+      "poll-tick":             "type-poll-tick",
+      "poll-error":            "type-poll-error",
+      "rpc-error":             "type-rpc-error",
     };
     return `action-badge ${known[key] ?? "type-default"}`;
   };
@@ -798,6 +819,48 @@ function App() {
                   Select a session.
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="card space-y-3">
+            <h2 className="section-title">Join Swarm as Rust Agent</h2>
+            <p className="text-xs text-gray-500">
+              Paste the CORAL_CONNECTION_URL from a running CoralOS session. Select a local agent — it will receive mentions and reply using its strategy.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">CORAL_CONNECTION_URL</label>
+                <input
+                  className="input-field"
+                  placeholder="http://localhost:5555/mcp?..."
+                  value={mcpConnectionUrl}
+                  onChange={e => setMcpConnectionUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Local agent to use</label>
+                <select
+                  className="input-field"
+                  value={mcpAgentName}
+                  onChange={e => setMcpAgentName(e.target.value)}
+                >
+                  <option value="">Select agent…</option>
+                  {agentsWithRoles.map(([id, , meta]) => (
+                    <option key={id} value={id}>{id} ({meta.role})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="btn-primary" onClick={handleMcpJoin} disabled={mcpJoining}>
+                {mcpJoining ? 'Joining…' : 'Join Swarm'}
+              </button>
+              {Object.entries(mcpStatuses).map(([name, active]) => (
+                <span key={name} className="flex items-center gap-1 text-xs font-mono">
+                  <span className={`status-dot ${active ? 'running' : 'stopped'}`} />
+                  {name}
+                </span>
+              ))}
             </div>
           </div>
         </div>
