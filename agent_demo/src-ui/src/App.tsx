@@ -125,7 +125,7 @@ interface PaymentFlowRecord {
 const ROLES = ["leader", "coordinator", "worker", "monitor", "analyst", "trader"] as const;
 
 function App() {
-  const [tab, setTab] = useState<Tab>("local");
+  const [tab, setTab] = useState<Tab>("weather");
 
   // --- Local Agents state ---
   const [agents, setAgents] = useState<AgentTuple[]>([]);
@@ -686,16 +686,16 @@ function App() {
       {/* Tab bar */}
       <div className="tab-bar">
         {[
-          { key: "local",          label: "Local Agents"   },
+          { key: "weather",        label: "🌤 Weather"     },
+          { key: "pay-demo",       label: "⚡ Pay Demo"    },
+          { key: "local",          label: "Agents"         },
           { key: "coralos",        label: "CoralOS"        },
-          { key: "messaging",      label: "Messaging"      },
-          { key: "shared-state",   label: "Shared State"   },
           { key: "workflows",      label: "Workflows"      },
           { key: "solana-pay",     label: "Solana Pay"     },
-          { key: "pay-demo",       label: "⚡ Pay Demo"    },
-          { key: "payment-flows",  label: "Payment Flows"  },
-          { key: "python-agent",   label: "🐍 Python Agent"},
-          { key: "weather",        label: "🌤 Weather Agent"},
+          { key: "messaging",      label: "Messaging"      },
+          { key: "shared-state",   label: "Shared State"   },
+          { key: "payment-flows",  label: "Flows"          },
+          { key: "python-agent",   label: "🐍 Python"      },
         ].map((t) => (
           <button
             key={t.key}
