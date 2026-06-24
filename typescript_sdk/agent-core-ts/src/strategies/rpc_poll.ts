@@ -1,8 +1,7 @@
-import type { Strategy, MutableAgentState } from '../strategy.js'
-import { untilAborted } from '../strategy.js'
+import { BaseStrategy, MutableAgentState, untilAborted } from '../strategy.js'
 import { Connection } from '@solana/web3.js'
 
-export class RpcPollStrategy implements Strategy {
+export class RpcPollStrategy extends BaseStrategy {
   readonly name = 'rpc-poll'
   private intervalMs: number
 

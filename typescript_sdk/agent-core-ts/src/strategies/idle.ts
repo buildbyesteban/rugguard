@@ -1,7 +1,6 @@
-import type { Strategy, MutableAgentState } from '../strategy.js'
-import { untilAborted } from '../strategy.js'
+import { BaseStrategy, MutableAgentState, untilAborted } from '../strategy.js'
 
-export class IdleStrategy implements Strategy {
+export class IdleStrategy extends BaseStrategy {
   readonly name = 'idle'
 
   async run(state: MutableAgentState, signal: AbortSignal): Promise<void> {

@@ -1,5 +1,4 @@
-import type { Strategy, MutableAgentState } from '../strategy.js'
-import { untilAborted } from '../strategy.js'
+import { BaseStrategy, MutableAgentState, untilAborted } from '../strategy.js'
 import type { PaymentChallenge } from '../types.js'
 
 export interface PaymentConfig {
@@ -21,7 +20,7 @@ function parse402Headers(headers: Headers): PaymentChallenge | null {
   }
 }
 
-export class PaymentStrategy implements Strategy {
+export class PaymentStrategy extends BaseStrategy {
   readonly name = 'solana-pay-payment'
   private config: PaymentConfig
 

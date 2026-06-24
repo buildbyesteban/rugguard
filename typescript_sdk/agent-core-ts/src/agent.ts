@@ -55,23 +55,30 @@ export class Agent {
     }
   }
 
+  // Build the MutableAgentState view used by strategies.
+  private makeMutable(): MutableAgentState {
+    const agent = this
+    return {
+      get id() { return agent.id },
+      get rpcEndpoint() { return agent._rpcEndpoint },
+      get network() { return agent._network },
+      recordAction: this.recordAction.bind(this),
+      snapshot: this.state.bind(this),
+    }
+  }
+
+  // Deliver a message to this agent's strategy and return its response.
+  // Mirrors Rust agent.get_strategy().handle_message(text, state_arc).
+  async handleMessage(text: string): Promise<string> {
+    return this._strategy.handleMessage(text, this.makeMutable())
+  }
+
   async start(): Promise<boolean> {
     if (this._running) return false
     this._running = true
     this._abortController = new AbortController()
     const signal = this._abortController.signal
-
-    const mutable: MutableAgentState = {
-      id: this.id,
-      get rpcEndpoint() { return this._rpcEndpoint },
-      get network() { return this._network },
-      recordAction: this.recordAction.bind(this),
-      snapshot: this.state.bind(this),
-    } as unknown as MutableAgentState
-
-    // Patch the mutable object with proper accessors
-    Object.defineProperty(mutable, 'rpcEndpoint', { get: () => this._rpcEndpoint })
-    Object.defineProperty(mutable, 'network', { get: () => this._network })
+    const mutable = this.makeMutable()
 
     this._strategy.run(mutable, signal)
       .catch((e) => {

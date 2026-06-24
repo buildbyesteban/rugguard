@@ -1,5 +1,4 @@
-import type { Strategy, MutableAgentState } from '../strategy.js'
-import { untilAborted } from '../strategy.js'
+import { BaseStrategy, MutableAgentState, untilAborted } from '../strategy.js'
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
 
 export interface HeliusMonitorConfig {
@@ -9,7 +8,7 @@ export interface HeliusMonitorConfig {
   network?: 'devnet' | 'mainnet-beta'
 }
 
-export class HeliusMonitorStrategy implements Strategy {
+export class HeliusMonitorStrategy extends BaseStrategy {
   readonly name = 'helius-monitor'
   private config: HeliusMonitorConfig
 

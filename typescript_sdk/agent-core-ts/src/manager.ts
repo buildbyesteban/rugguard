@@ -2,6 +2,7 @@ import { Agent } from './agent.js'
 import { MessageBus } from './message_bus.js'
 import { SharedState } from './shared_state.js'
 import { WorkflowEngine } from './workflow.js'
+import { BaseStrategy } from './strategy.js'
 import type { Strategy } from './strategy.js'
 import type { AgentState, AgentMessage, Workflow } from './types.js'
 import { AgentRole } from './role.js'
@@ -76,10 +77,15 @@ export class AgentManager {
   createWorkflow(workflow: Workflow): void {
     this.workflows.create(workflow)
   }
+
+  // Deliver a message to a named agent and return its response, or null if not found.
+  async handleMessage(id: string, text: string): Promise<string | null> {
+    return this._agents.get(id)?.handleMessage(text) ?? null
+  }
 }
 
-class IdleStrategy implements Strategy {
-  name = 'idle'
+class IdleStrategy extends BaseStrategy {
+  readonly name = 'idle'
   async run(_state: unknown, signal: AbortSignal): Promise<void> {
     await new Promise<void>((resolve) => {
       const tick = setInterval(() => {}, 1000)
