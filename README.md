@@ -170,6 +170,16 @@ Code* as slash commands:
 Use the full **HTTPS URL** (the `owner/repo` shorthand clones via SSH and fails without GitHub SSH
 keys). Then `/coral-setup`, `/coral-session-control`, etc. Reload Claude Code after installing.
 
+## Building on it
+
+The fork points: `coral-agents/seller-agent/src/service.ts → deliverService()` (what's sold),
+`coral-agents/buyer-agent/` (what the buyer wants), a new agent in `config/coral.toml`, or
+`examples/agent-economy/escrow/` (trustless settlement). Deep guides:
+
+- **[docs/HACKATHON.md](docs/HACKATHON.md)** — composing a hackathon: where to build + what types of apps
+- **[docs/APIS.md](docs/APIS.md)** — APIs you can sell (free?/key?/devnet?), incl. the Codex/OpenAI option
+- **[docs/PRODUCTION_HARDENING.md](docs/PRODUCTION_HARDENING.md)** — taking it past a devnet demo
+
 ## License
 
 MIT
