@@ -25,7 +25,7 @@ npm run dev
 - **Next.js 14** (app router)
 - **Tailwind CSS** — dark theme with Solana brand colours
 - **@solana/wallet-adapter-react** — Phantom wallet connection
-- **sdk/sdk** — `CoralClient` HTTP wrapper for `api-ts`
+- **sdk/coral-client** — `CoralClient` HTTP wrapper for `api-ts`
 
 ## Pages
 

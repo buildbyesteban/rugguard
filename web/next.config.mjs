@@ -16,7 +16,7 @@ const nextConfig = {
     }
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@pay/sdk': path.resolve(__dirname, '../sdk/sdk/src'),
+      '@pay/coral-client': path.resolve(__dirname, '../sdk/coral-client/src'),
     }
     return config
   },

@@ -1,6 +1,6 @@
-# @pay/sdk
+# @pay/coral-client
 
-Typed HTTP client for the Axum REST API (`api/`) wrapping `agent-core`. Every endpoint on `api/` is exposed as a typed method. Zero runtime dependencies: `@pay/sdk` uses the built-in `fetch` API only.
+Typed HTTP client for the Axum REST API (`api/`) wrapping `agent-core`. Every endpoint on `api/` is exposed as a typed method. Zero runtime dependencies: `@pay/coral-client` uses the built-in `fetch` API only.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ Typed HTTP client for the Axum REST API (`api/`) wrapping `agent-core`. Every en
 ## Installation
 
 ```bash
-cd sdk/sdk
+cd sdk/coral-client
 npm install
 npm run build
 ```
@@ -31,13 +31,13 @@ npm run build
 Then import in another package:
 
 ```typescript
-import { CoralClient } from '@pay/sdk'
+import { CoralClient } from '@pay/coral-client'
 ```
 
 Or directly:
 
 ```typescript
-import { CoralClient } from '../sdk/sdk/src/index.js'
+import { CoralClient } from '../sdk/coral-client/src/index.js'
 ```
 
 ---
@@ -45,7 +45,7 @@ import { CoralClient } from '../sdk/sdk/src/index.js'
 ## Quick Start
 
 ```typescript
-import { CoralClient } from '@pay/sdk'
+import { CoralClient } from '@pay/coral-client'
 
 const client = new CoralClient('http://localhost:8081')
 
@@ -66,7 +66,7 @@ console.log(state.is_running, state.strategy, state.actions.length)
 ## Class: CoralClient
 
 ```typescript
-import { CoralClient } from '@pay/sdk'
+import { CoralClient } from '@pay/coral-client'
 ```
 
 ### Constructor
@@ -562,7 +562,7 @@ const active = await client.getCoralMcpStatus('rust-coral-agent')
 
 ## Exported Types
 
-All types are re-exported from `@pay/sdk`. They mirror the Rust structs and are compatible with `@pay/agent-core-ts` types (same field names, same shapes).
+All types are re-exported from `@pay/coral-client`. They mirror the Rust structs and are compatible with `@pay/agent-core-ts` types (same field names, same shapes).
 
 ```typescript
 import type {
@@ -576,7 +576,7 @@ import type {
   Workflow,
   PaymentFlowRecord,
   CoralMention,
-} from '@pay/sdk'
+} from '@pay/coral-client'
 ```
 
 ### `AgentAction`
@@ -717,7 +717,7 @@ interface PaymentFlowRecord {
 Full 10-step flow from agent creation to confirmed sale:
 
 ```typescript
-import { CoralClient } from '@pay/sdk'
+import { CoralClient } from '@pay/coral-client'
 
 const client = new CoralClient('http://localhost:8081')
 

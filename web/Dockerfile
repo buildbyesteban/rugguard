@@ -5,7 +5,7 @@ FROM node:20-slim AS builder
 WORKDIR /build
 
 # SDK (used via @pay/sdk alias in next.config.mjs)
-COPY sdk/sdk/ ./sdk/sdk/
+COPY sdk/coral-client/ ./sdk/coral-client/
 
 # web
 COPY web/package*.json ./web/

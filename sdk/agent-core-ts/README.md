@@ -1,6 +1,6 @@
 # @pay/agent-core-ts
 
-TypeScript multi-agent runtime that mirrors the Rust `agent-core` library concept-for-concept. Use this package to build and run Solana-aware agents entirely in Node.js or the browser. It pairs with `@pay/sdk` (the HTTP client for coral-server) and with `CoralMcpAgent` for CoralOS MCP sessions.
+TypeScript multi-agent runtime that mirrors the Rust `agent-core` library concept-for-concept. Use this package to build and run Solana-aware agents entirely in Node.js or the browser. It pairs with `@pay/coral-client` (the HTTP client for coral-server) and with `CoralMcpAgent` for CoralOS MCP sessions.
 
 ## Table of Contents
 

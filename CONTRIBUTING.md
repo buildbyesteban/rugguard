@@ -8,7 +8,7 @@ Contributions are welcome. The `main` branch is the integration branch — targe
 |-----------|----------|-----------------|
 | `sdk/agent-core-ts/` | TypeScript | New strategies, Solana Pay logic, messaging, workflows |
 | `api-ts/` | TypeScript (Express) | New REST endpoints, handler logic |
-| `sdk/sdk/` | TypeScript | CoralClient HTTP wrapper |
+| `sdk/coral-client/` | TypeScript | CoralClient HTTP wrapper |
 | `web/` | TypeScript (Next.js) | Consumer marketplace UI |
 | `coral-agents/` | Python | CoralOS MCP agents |
 

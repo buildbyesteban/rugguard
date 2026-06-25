@@ -14,7 +14,7 @@ A TypeScript-first monorepo for a Solana agent-economy starter kit. Agents reque
 | `coral-agents/` | Agents coral-server launches: `seller-agent` (fork `service.ts`), `buyer-agent`, `echo-agent` (TypeScript); `user_proxy` (Python — the human's session stand-in, driven via the puppet API) |
 | `api-ts/` | Express REST API — secondary server (port 8081) |
 | `sdk/agent-core-ts/` | TypeScript agent runtime: `AgentManager`, `Strategy`, `MessageBus`, `SharedState`, `WorkflowEngine`, CoralOS MCP client, Solana Pay strategies |
-| `sdk/sdk/` | `CoralClient` — typed HTTP wrapper for `api-ts/` |
+| `sdk/coral-client/` | `CoralClient` — typed HTTP wrapper for `api-ts/` |
 | `web/` | Next.js marketplace UI — Phantom wallet flow (port 3000) |
 | `docs/`, `.claude/` | Design documents + the `AGENT_ECONOMY_RESTRUCTURE.md` plan (gates G1–G3) |
 | `e2e/` | Playwright end-to-end tests |

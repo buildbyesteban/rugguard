@@ -171,4 +171,4 @@ All components described in this document are implemented and working:
 - Payment flow debugger showing the full request → 402 → payment → delivery sequence
 - Web frontend mode via `npm run dev` (api-ts) + `npm run dev` (web)
 - TypeScript agent runtime in `sdk/agent-core-ts/` (identical concepts to Rust)
-- HTTP SDK in `sdk/sdk/` for calling the API from any JS/TS project
+- HTTP SDK in `sdk/coral-client/` for calling the API from any JS/TS project
