@@ -6,8 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A TypeScript-first starter kit for a Solana **agent economy**: a seller agent sells a service for SOL;
 buyers — another agent (autonomous) or a human (Phantom checkout) — request it over **CoralOS** (MCP),
-pay on-chain, and the seller verifies the payment and delivers. One track, two front doors. The stack
-is Node.js/TypeScript throughout (plus one ~40-line Python puppet) — no Rust, no Cargo.
+pay on-chain, and the seller verifies the payment and delivers. One track, two front doors. The core
+stack is Node.js/TypeScript throughout (plus one ~40-line Python puppet) — no Rust. There is **one
+optional Rust add-on**: an Anchor escrow under `examples/agent-economy/escrow/` (the trustless-settlement
+upgrade), clearly marked as opt-in and not needed by the core track.
 
 ## Repo Layout
 

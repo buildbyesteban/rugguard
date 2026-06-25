@@ -87,6 +87,14 @@ verifies on-chain and delivers — the same seller the autonomous buyer uses.
 [`quickstart/`](quickstart/) is the same pay-per-call loop as two bare-metal Node processes over
 plain HTTP `402` — no Docker, no CoralOS. The fastest way to understand the payment cycle.
 
+## Want trustless settlement? — the escrow add-on
+
+The base loop is *pay-first* (the buyer trusts the seller to deliver). [`escrow/`](escrow/) is the
+**optional smart-contract upgrade**: an Anchor program where the buyer deposits, the seller is paid
+only on release, and the buyer can refund after a deadline. Opt-in (it adds Rust); the core track
+doesn't need it. The README there covers building it and what you can build on top (disputes,
+streaming payments, USDC, an on-chain agent registry).
+
 ---
 
 ## The fork points

@@ -12,6 +12,11 @@ build/
 .next/
 tsconfig.tsbuildinfo
 
+# Anchor / Rust (the optional escrow add-on)
+target/
+.anchor/
+test-ledger/
+
 # Secrets — students fill these in themselves
 .env
 .env.local
