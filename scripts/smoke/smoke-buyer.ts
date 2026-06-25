@@ -7,9 +7,9 @@
  *   3. (Optional, with BUYER_KEYPAIR_B58) actually pay and assert a 200 with data.
  *
  * This verifies the seller half deterministically without needing an Anthropic key. The full
- * LLM-driven path is `examples/track-1-pay-per-call/buyer.ts` (needs ANTHROPIC_API_KEY).
+ * LLM-driven path is `examples/agent-economy/quickstart/buyer.ts` (needs ANTHROPIC_API_KEY).
  *
- * PRECONDITION: `npm run server` in examples/track-1-pay-per-call (default :3001).
+ * PRECONDITION: `npm run server` in examples/agent-economy/quickstart (default :3001).
  */
 const ENDPOINT = process.env.ENDPOINT ?? 'http://localhost:3001/api/data'
 

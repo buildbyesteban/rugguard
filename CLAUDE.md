@@ -10,13 +10,17 @@ A TypeScript-first monorepo for a Solana agent-economy starter kit. Agents reque
 
 | Directory | Purpose |
 |-----------|---------|
-| `api-ts/` | Express REST API — the primary server (port 8081) |
-| `sdk/agent-core-ts/` | TypeScript agent runtime: `AgentManager`, `Strategy`, `MessageBus`, `SharedState`, `WorkflowEngine`, Solana Pay strategies |
+| `examples/agent-economy/` | **The track.** `autonomous/` (agent↔agent starter), `bridge/` (human→user-proxy Phantom front door), `config/coral.toml` (wallet-free MCP config), `quickstart/` (no-Docker bare-metal 402) |
+| `coral-agents/` | Agents coral-server launches: `seller-agent` (fork `service.ts`), `buyer-agent`, `echo-agent` (TypeScript); `user_proxy` (Python — the human's session stand-in, driven via the puppet API) |
+| `api-ts/` | Express REST API — secondary server (port 8081) |
+| `sdk/agent-core-ts/` | TypeScript agent runtime: `AgentManager`, `Strategy`, `MessageBus`, `SharedState`, `WorkflowEngine`, CoralOS MCP client, Solana Pay strategies |
 | `sdk/sdk/` | `CoralClient` — typed HTTP wrapper for `api-ts/` |
-| `web/` | Next.js consumer marketplace — Phantom wallet payment flow (port 3000) |
-| `coral-agents/` | Agents launched by CoralOS: `buyer-agent`, `seller-agent`, `echo-agent` (TypeScript); `user_proxy` (Python test puppet) |
-| `docs/` | Design documents, CoralOS config, restructure plan |
+| `web/` | Next.js marketplace UI — Phantom wallet flow (port 3000) |
+| `docs/`, `.claude/` | Design documents + the `AGENT_ECONOMY_RESTRUCTURE.md` plan (gates G1–G3) |
 | `e2e/` | Playwright end-to-end tests |
+
+The headline path is `examples/agent-economy/` on stock coral-server. CoralOS is the MCP
+coordination layer only — payments settle agent-side in SOL (no coral-server wallet, no native x402).
 
 ## Commands
 

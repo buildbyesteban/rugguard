@@ -181,7 +181,12 @@ services:
 |---|---|---|
 | **G1** | stock coral-server boots wallet-free; agents register | ✅ **GREEN** (2026-06-25) — `coral-server:latest` booted with the wallet-free `coral.toml` ("Responding at 5555"); all 4 agents registered, no wallet errors. |
 | **G2** | autonomous loop settles over CoralOS | ✅ **GREEN** (2026-06-25) — `start.ts` → session [buyer,seller] → buyer paid 0.0001 SOL on devnet → seller verified on-chain → delivered live Jupiter quote → looped. Real txs `3pBKjz…`, `2oQtTe…`. |
-| **G3** | human path delivers over CoralOS | ⏳ pending — needs the bridge (Step 4). |
+| **G3** | human path delivers over CoralOS | ✅ **GREEN** (2026-06-25) — bridge order → seller `PAYMENT_REQUIRED` → paid 0.0001 SOL on devnet → seller verified on-chain → `DELIVERED` live Jupiter quote. Real tx `3RnY15…`. |
+
+> **Puppet API is send-only (resolved):** there is no GET route to read a thread —
+> `PuppetApi.kt` only exposes create-thread / send-message / participant ops. Replies are read
+> from `GET /api/v1/local/session/{ns}/{sid}/extended` (which carries `threads[].messages[]` with
+> `{threadId, text, senderName}`), scoped to the order's `threadId`. The bridge polls that.
 
 G2 is the headline proof: it fuses the already-green MCP handshake (Gate A) and on-chain SOL
 settlement (Gate B) into one continuous loop **coordinated by stock CoralOS**.

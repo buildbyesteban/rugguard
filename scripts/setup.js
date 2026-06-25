@@ -44,22 +44,25 @@ Setup complete — wallets generated and saved to .env
   Seller wallet  ${sellerPubkey}
   Buyer  wallet  ${buyerPubkey}
 
-Fund both wallets with devnet SOL before running any track:
+Fund both wallets with devnet SOL before running:
 
   https://faucet.solana.com
 
-  Paste each address above, request 1 SOL each.
-  Tracks 1 & 2 need ~0.01 SOL total to run several cycles.
-  Track 3 uses your Phantom wallet — fund that separately.
+  Paste each address above, request 1 SOL each (the Checkout door also uses
+  your Phantom wallet — fund that separately).
 
-Once funded, pick a track and run:
+Then add ANTHROPIC_API_KEY=sk-ant-... to .env (for the LLM buyer), build the
+agent images, and start the economy:
 
-  cd examples/track-1-pay-per-call && docker compose up
-  # open http://localhost:3000/track-1
+  bash build-agents.sh seller && bash build-agents.sh buyer
+  docker build -t user-proxy:0.1.0 coral-agents/user_proxy
+  docker compose up -d coral
 
-  cd examples/track-2-agent-trading && docker compose up
-  # open http://localhost:3000/track-2
+  # Autonomous (agent → agent):
+  cd examples/agent-economy/autonomous && npm install && npm start
 
-  cd examples/track-3-consumer-checkout && docker compose up
-  # open http://localhost:3000/track-3 (connect Phantom on Devnet)
+  # Checkout (human → agent):
+  docker compose up -d bridge        # then open http://localhost:3010 with Phantom
+
+  # No Docker? — examples/agent-economy/quickstart  (bare-metal 402)
 `)

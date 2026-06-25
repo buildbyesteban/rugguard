@@ -9,9 +9,10 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 )
 
+// One agent economy, two front doors.
 const TRACKS = [
-  { href: '/track-1', label: 'Track 1', sub: 'Pay-Per-Call' },
-  { href: '/track-2', label: 'Track 2', sub: 'Checkout' },
+  { href: '/track-1', label: 'Autonomous', sub: 'agent → agent' },
+  { href: '/track-2', label: 'Checkout', sub: 'human → agent' },
 ]
 
 export function Header() {

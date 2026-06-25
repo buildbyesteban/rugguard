@@ -68,8 +68,10 @@ case "${1:-all}" in
     build_api
     build_web
     echo ""
-    echo "All images built. Run a track:"
-    echo "  docker compose -f examples/track-1-pay-per-call/docker-compose.yml up"
+    echo "All images built. Start the economy:"
+    echo "  docker compose up -d coral"
+    echo "  cd examples/agent-economy/autonomous && npm start   # agent → agent"
+    echo "  docker compose up -d bridge                         # human → agent (:3010)"
     ;;
   *) echo "Usage: bash build-agents.sh [seller|buyer|proxy|api|web|all]"; exit 1 ;;
 esac
