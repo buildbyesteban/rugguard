@@ -28,7 +28,16 @@ goal is narrower (e.g. internal agents only), re-rank accordingly.
 
 The highest-stakes category — these gate any real-money deployment.
 
-### 1.1 Payment replay protection — **the one real gap**
+### 1.1 Payment replay protection — **✅ done (in-memory)**
+
+A `ReplayGuard` ([`coral-agents/seller-agent/src/replay.ts`](../coral-agents/seller-agent/src/replay.ts))
+now records consumed signatures; the `paid` handler rejects a `sig` already used as proof. Unit-tested
+(`replay.test.ts` + `payment.test.ts`, 9 cases). **Still in-memory** — a restart forgets consumed
+sigs; back it with a durable store (Redis/SQLite) for production, and consider the reference-based
+upgrade below. The quickstart already uses reference-based verification, which is replay-resistant by
+construction.
+
+<details><summary>Original finding</summary>
 
 **What:** The seller verifies a payment by signature
 ([`coral-agents/seller-agent/src/payment.ts`](../coral-agents/seller-agent/src/payment.ts) →
@@ -48,6 +57,8 @@ two deliveries for one payment. On devnet this is harmless; with real money it's
   the protocol level rather than matched by amount.
 
 **Effort:** S–M. **Priority:** 🔴 **highest** — do this before anything else touches real value.
+
+</details>
 
 ### 1.2 Mainnet guard — **✅ done**
 
@@ -162,30 +173,20 @@ with rate limits, priority fees / compute budget, and a security review of every
 
 ## 4. Reliability & operations
 
-### 4.1 CI
+### 4.1 CI — **✅ coverage gap closed**
 
-**What:** `.github/workflows/ci.yml` exists and uses the current paths (it typechecks + tests
-`packages/agent-runtime` and `api-server`, builds `web`, runs the `e2e` Playwright suite). The gap is
-**coverage**: it does **not** touch the agent economy itself — `coral-agents/*`,
-`examples/agent-economy/*` (bridge/autonomous/quickstart), or `packages/coral-client`.
+`.github/workflows/ci.yml` now has an **`agent-economy`** job that typechecks `coral-client`, all
+three `coral-agents`, and the three `examples/agent-economy/*` packages, and runs the seller-agent
+tests. (Every package also gained a uniform `npm run typecheck`.) **Still future:** running the smoke
+gates (`scripts/smoke/*`, `bridge/smoke.ts`) against an ephemeral coral-server in CI, and `npm audit`.
 
-**How:** Add a matrix job over those packages (typecheck each); run the smoke gates
-(`scripts/smoke/*`, `bridge/smoke.ts`) against an ephemeral coral-server; add `npm audit`.
+### 4.2 Test coverage — **✅ payment path tested**
 
-**Effort:** S–M. **Priority:** 🟠 high — cheapest insurance against regressions, and right now the
-**core** track has no CI at all.
-
-### 4.2 Test coverage
-
-**What:** Solid unit tests for `shared_state`/`message_bus` (11 passing); smoke gates for MCP +
-pay-per-call; Playwright for the marketplace. Thin spots: `verify.ts` / `payment.ts` (the
-security-critical path), the buyer budget guard, the bridge order flow.
-
-**How:** Unit-test `verifyPayment` (good amount, wrong amount, wrong recipient, missing tx, **replayed
-sig** once 1.1 lands). The Solana skill's **LiteSVM** lets you test on-chain logic without a live
-devnet.
-
-**Effort:** M. **Priority:** 🟠 high (pairs with 1.1).
+`verifyPayment` is now unit-tested (`coral-agents/seller-agent/src/payment.test.ts`: full price,
+1% tolerance, underpayment, wrong recipient, missing tx, RPC-error-fails-closed) and the
+`ReplayGuard` (`replay.test.ts`). 20 tests across the runtime + seller now pass. **Thin spots
+remaining:** the buyer budget guard and the bridge order flow; the Solana skill's **LiteSVM** would
+let you test richer on-chain logic without a live devnet.
 
 ### 4.3 Observability
 
@@ -234,17 +235,18 @@ If you're taking this to mainnet, in order:
 
 | # | Item | Why first | Effort |
 |---|------|-----------|--------|
-| 1 | **Replay protection** (1.1) | the one real security hole — free goods | S–M |
-| 2 | **CI over all packages** (4.1) | catch regressions; we just renamed everything | S–M |
-| 3 | **Tests for the payment path** (4.2) | the security-critical code is under-tested | M |
+| 1 | **Replay protection** (1.1) | the one real security hole — free goods | ✅ **done** (in-memory) |
+| 2 | **CI over all packages** (4.1) | catch regressions; we just renamed everything | ✅ **done** (typecheck; smoke-in-CI pending) |
+| 3 | **Tests for the payment path** (4.2) | the security-critical code is under-tested | ✅ **done** (9 cases) |
 | 4 | **Auth tokens + network auth** (1.3) | the moment coral-server leaves localhost | S |
 | 5 | **USDC/SPL settlement** (3.1) | price stability for real commerce | M |
 | 6 | **Escrow** (2.1) | trustless settlement for an open marketplace | L |
 | 7 | **Key custody** (1.4) | safe spending on mainnet | M–L |
 | 8 | Mainnet migration (3.3), observability (4.3), provider-flex (5.1) | round out | M each |
 
-**The cheapest high-value pair:** replay protection (1) + payment-path tests (3) + CI (2). That trio
-closes the real security gap and locks it in against regression — a weekend of work, and the only one
-strictly required before real value flows.
+**The cheapest high-value trio — replay protection (1) + payment-path tests (3) + CI (2) — is now
+✅ done.** The real security gap (signature replay) is closed and unit-tested, and the agent economy
+is under CI against regression. Next strictly-required item before real value flows is **auth + USDC**
+(4–5); the rest is direction-dependent.
 
 See [`.claude/AUDIT.md`](../.claude/AUDIT.md) for the audit these items came from.

@@ -13,9 +13,13 @@
 import { startCoralAgent } from '@pay/agent-runtime'
 import { generatePaymentUrl, verifyPayment } from './payment.js'
 import { deliverService } from './service.js'
+import { ReplayGuard } from './replay.js'
 
 // Pending payments: memo → { request, paid: false }
 const pending = new Map<string, { request: string }>()
+
+// Consumed payment signatures — rejects reuse of one payment as proof for many requests.
+const replay = new ReplayGuard()
 
 await startCoralAgent({ agentName: 'seller-agent' }, async (ctx) => {
   console.error('[seller-agent] ready — waiting for buyers')
@@ -60,6 +64,12 @@ await startCoralAgent({ agentName: 'seller-agent' }, async (ctx) => {
         continue
       }
 
+      // Reject a signature already used as proof for another order.
+      if (replay.has(sig)) {
+        await ctx.reply(mention, `ERROR: payment signature already used`)
+        continue
+      }
+
       console.error(`[seller-agent] verifying payment sig=${sig}`)
       const verified = await verifyPayment(sig, memo)
 
@@ -68,6 +78,7 @@ await startCoralAgent({ agentName: 'seller-agent' }, async (ctx) => {
         continue
       }
 
+      replay.consume(sig)
       pending.delete(memo)
       console.error(`[seller-agent] payment verified — delivering service`)
 

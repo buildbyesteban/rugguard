@@ -52,6 +52,31 @@ jobs:
           NEXT_PUBLIC_CORAL_SERVER: http://localhost:8081
           NEXT_PUBLIC_HELIUS_RPC: https://devnet.helius-rpc.com/?api-key=test
 
+  agent-economy:
+    name: Agent Economy (agents + examples)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build the runtime (dependents need its dist)
+        run: cd packages/agent-runtime && npm install && npm run build
+      - name: coral-client
+        run: cd packages/coral-client && npm install && npm run typecheck
+      - name: seller-agent (typecheck + tests)
+        run: cd coral-agents/seller-agent && npm install && npm run typecheck && npm test
+      - name: buyer-agent
+        run: cd coral-agents/buyer-agent && npm install && npm run typecheck
+      - name: echo-agent
+        run: cd coral-agents/echo-agent && npm install && npm run typecheck
+      - name: bridge
+        run: cd examples/agent-economy/bridge && npm install && npm run typecheck
+      - name: autonomous
+        run: cd examples/agent-economy/autonomous && npm install && npm run typecheck
+      - name: quickstart
+        run: cd examples/agent-economy/quickstart && npm install && npm run typecheck
+
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
