@@ -77,13 +77,24 @@ repo. `scripts/setup.js` generates the Solana wallets for you, so you mostly jus
 
 ## Quick start
 
+**One shot** (needs [`just`](https://github.com/casey/just) + Docker):
+
+```sh
+just dev          # wallets + airdrop + build images + start coral & bridge
+# → open http://localhost:3010 and click "Run the agent↔agent demo"
+```
+
+`just dev` chains the steps below; `just --list` shows all recipes (`auto`, `logs`, `down`). If a
+recipe errors or you don't have `just`, run the steps manually:
+
 ```sh
 git clone https://github.com/trilltino/solana_coralOS
 cd solana_coralOS
 
 cd scripts && npm install && cd ..
 node scripts/setup.js                  # generates wallets → .env, prints 2 addresses to fund
-# fund both at https://faucet.solana.com, then add ANTHROPIC_API_KEY=sk-ant-… to .env
+node scripts/airdrop.js                # best-effort devnet airdrop to both (or fund at the faucet)
+# fund both at https://faucet.solana.com if the airdrop is rate-limited; add ANTHROPIC_API_KEY=sk-ant-… to .env
 
 # build the agent images coral-server launches
 bash build-agents.sh seller && bash build-agents.sh buyer
