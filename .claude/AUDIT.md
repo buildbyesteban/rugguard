@@ -51,5 +51,8 @@ Verified: **zero** `cargo` / `:8080` / `api-ts` / `rockspec` references remain i
 
 Priority if hardening: replay + rate-limit (the one real security gap) → CI → mainnet guard → the rest.
 
+**Full roadmap:** [`docs/PRODUCTION_HARDENING.md`](../docs/PRODUCTION_HARDENING.md) expands each item
+with what/why/how/effort/priority and a prioritized table. (The mainnet guard is now ✅ done.)
+
 ## Disk-only cruft (untracked, not in git)
 - Root `package-lock.json` with **no** root `package.json` — orphan from a stray `npm` at root. Safe to delete from disk.
