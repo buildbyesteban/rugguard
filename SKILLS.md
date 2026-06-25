@@ -96,10 +96,10 @@ cd web && npm run dev
 
 # 4. Open Claude Code and launch the swarm
 /coral-agent-swarm
-# → CoralOS spawns Seller agent, Buyer agent, Helius Monitor
+# → CoralOS spawns Seller agent + Buyer agent
 # → Agents join via CORAL_CONNECTION_URL
-# → Seller generates Solana Pay URL
-# → Buyer pays, Helius detects payment, Seller delivers
+# → Seller replies with a Solana Pay URL
+# → Buyer pays on devnet, Seller verifies on-chain (getTransaction), Seller delivers
 ```
 
 ### Write a new Anchor program with skill assistance

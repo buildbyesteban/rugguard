@@ -50,7 +50,7 @@ This agent represents a service that wants to be paid before it delivers anythin
 
 ---
 
-### Agent 2 — The Buyer (Helius Monitor Agent)
+### Agent 2 — The Buyer (LLM Buyer Agent)
 
 This agent represents a buyer that wants data and is willing to pay for it automatically.
 
@@ -170,5 +170,5 @@ All components described in this document are implemented and working:
 - Two-panel Pay Demo tab in the UI showing both agents live with action feeds
 - Payment flow debugger showing the full request → 402 → payment → delivery sequence
 - Web frontend mode via `npm run dev` (api-server) + `npm run dev` (web)
-- TypeScript agent runtime in `packages/agent-runtime/` (identical concepts to Rust)
+- TypeScript agent runtime in `packages/agent-runtime/`
 - HTTP SDK in `packages/coral-client/` for calling the API from any JS/TS project

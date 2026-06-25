@@ -9,7 +9,7 @@
 
 import { test, expect, request } from '@playwright/test'
 
-const API = process.env.API_URL ?? 'http://localhost:8080'
+const API = process.env.API_URL ?? 'http://localhost:8081'
 
 test.describe('@api Health', () => {
   test('GET /health returns status healthy', async () => {
