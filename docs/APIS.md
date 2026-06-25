@@ -21,7 +21,7 @@ data; the first two are the only ones that read **devnet** specifically.
 
 | API | Free | Key | Devnet | What service it makes |
 |-----|:---:|:---:|:---:|---|
-| **Solana devnet RPC** (`api.devnet.solana.com`) | ✅ | ❌ | ✅ | wallet balance, token holdings, tx lookup, account info, network stats, airdrop — *the* devnet-native services |
+| **Solana devnet RPC** (`api.devnet.solana.com`) | ✅ | ❌ | ✅ | wallet balance, token holdings, tx lookup, account info, network stats — *the* devnet-native services |
 | **Helius** (`devnet.helius-rpc.com`) | ✅ tier | ✅ | ✅ | enhanced RPC + parsed transactions + `onAccountChange` (already used by `HeliusMonitorStrategy`) — "subscribe to a devnet account" |
 | **CoinStats Solana** | ✅ 20k/mo | ✅ | ❌ (mainnet) | pass a wallet → SPL balances, tx history, DeFi positions as JSON |
 | **Solana Tracker** | ✅ 2.5k req | ✅ | ❌ (mainnet) | 70+ endpoints — token price/volume/liquidity, wallet tracking, trade history |

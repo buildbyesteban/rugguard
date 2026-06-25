@@ -44,12 +44,12 @@ Setup complete — wallets generated and saved to .env
   Seller wallet  ${sellerPubkey}
   Buyer  wallet  ${buyerPubkey}
 
-Fund both wallets with devnet SOL before running:
+Fund both wallets with devnet SOL before running — the only way is the web
+faucet (CLI/RPC airdrops are gated):
 
-  https://faucet.solana.com
+  https://faucet.solana.com   (sign in with GitHub, paste each address above)
 
-  Paste each address above, request 1 SOL each (the Checkout door also uses
-  your Phantom wallet — fund that separately).
+  The Checkout door also uses your Phantom wallet — fund that separately.
 
 Then add ANTHROPIC_API_KEY=sk-ant-... to .env (for the LLM buyer), build the
 agent images, and start the economy:

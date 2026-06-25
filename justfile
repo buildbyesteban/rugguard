@@ -10,21 +10,22 @@ set shell := ["bash", "-c"]
 default:
     @just --list
 
-# ── one-shot: wallets + airdrop + build + run ───────────────────────────────
+# ── one-shot: wallets + build + run ─────────────────────────────────────────
 dev: setup build up
     @echo ""
     @echo "✅ Agent economy is up (coral + bridge)."
-    @echo "   Open  http://localhost:3010   →  click 'Run the agent↔agent demo'"
-    @echo "   (give the agents ~20s to spawn on the first run)"
     @echo ""
-    @echo "   If the airdrop was rate-limited, fund the two .env wallets at https://faucet.solana.com"
+    @echo "⚠  FUND the two wallets printed above before the agents can pay:"
+    @echo "     https://faucet.solana.com  (sign in with GitHub, request SOL to each address)"
+    @echo ""
+    @echo "   Then open  http://localhost:3010  →  click 'Run the agent↔agent demo'"
+    @echo "   (give the agents ~20s to spawn on the first run)"
     @echo "   Logs:  just logs    ·    Stop:  just down"
 
-# generate devnet wallets (if needed) + airdrop them
+# generate the devnet wallets (you fund them manually at the faucet)
 setup:
     cd scripts && npm install --silent --no-audit --no-fund
     node scripts/setup.js
-    node scripts/airdrop.js
 
 # build the agent images coral-server launches
 build:

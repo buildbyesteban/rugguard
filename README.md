@@ -57,7 +57,7 @@ repo. `scripts/setup.js` generates the Solana wallets for you, so you mostly jus
 
 | What | For | How to get it |
 |------|-----|---------------|
-| **Devnet SOL** (2 wallets) | paying + receiving | `node scripts/setup.js` generates a buyer + seller keypair into `.env` and prints two addresses. **Fund both** at [faucet.solana.com](https://faucet.solana.com) (free). |
+| **Devnet SOL** (2 wallets) | paying + receiving | `node scripts/setup.js` generates a buyer + seller keypair into `.env` and prints two addresses. **Fund both** at [faucet.solana.com](https://faucet.solana.com) — sign in with GitHub (the web faucet is the only way; CLI/RPC airdrops are gated). |
 | **Anthropic API key** | the LLM buyer *decides* to pay (+ the seller's optional `inference` service) | Free-tier key at [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY`. *(The on-chain payment works without it — this is only the agent's reasoning step.)* |
 | **Phantom wallet** | the human Checkout door | [phantom.com](https://phantom.com) extension, set to **Devnet**. |
 | **Docker Desktop** | coral-server launches the agents | [docker.com](https://www.docker.com/products/docker-desktop/). *(Skip it with the no-Docker quickstart below.)* |
@@ -80,8 +80,8 @@ repo. `scripts/setup.js` generates the Solana wallets for you, so you mostly jus
 **One shot** (needs [`just`](https://github.com/casey/just) + Docker):
 
 ```sh
-just dev          # wallets + airdrop + build images + start coral & bridge
-# → open http://localhost:3010 and click "Run the agent↔agent demo"
+just dev          # wallets + build images + start coral & bridge
+# then fund the 2 printed wallets (see below), open http://localhost:3010, click "Run"
 ```
 
 `just dev` chains the steps below; `just --list` shows all recipes (`auto`, `logs`, `down`). If a
@@ -92,15 +92,14 @@ git clone https://github.com/trilltino/solana_coralOS
 cd solana_coralOS
 
 cd scripts && npm install && cd ..
-node scripts/setup.js                  # generates wallets → .env, prints 2 addresses to fund
-node scripts/airdrop.js                # best-effort devnet airdrop to both (or fund at the faucet)
-# fund both at https://faucet.solana.com if the airdrop is rate-limited; add ANTHROPIC_API_KEY=sk-ant-… to .env
+node scripts/setup.js                  # generates wallets → .env, prints 2 addresses
 
-# build the agent images coral-server launches
-bash build-agents.sh seller && bash build-agents.sh buyer
-docker build -t user-proxy:0.1.0 coral-agents/user_proxy
+# FUND both printed addresses — the only way is the web faucet (sign in with GitHub):
+#   https://faucet.solana.com
+# (then add ANTHROPIC_API_KEY=sk-ant-… to .env — optional)
 
-docker compose up -d coral             # stock coral-server (wallet-free MCP bus)
+bash build-agents.sh                   # build the agent images coral-server launches
+docker compose up -d coral bridge      # stock coral-server + the checkout bridge (:3010)
 ```
 
 Then pick a front door — full guide in [`examples/agent-economy/`](examples/agent-economy/README.md):
