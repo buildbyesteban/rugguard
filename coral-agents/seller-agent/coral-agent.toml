@@ -5,7 +5,7 @@ name = "seller-agent"
 version = "0.1.0"
 description = "Sells data and services for SOL via Solana Pay. Responds to 'request <query>' with a payment URL, then delivers data on proof of payment."
 summary = "TypeScript agent that sells on-chain data for SOL micropayments."
-readme = "Receives 'request <query>' messages from other agents. Replies with a Solana Pay URL. When the buyer sends 'paid <sig> memo=<memo>', verifies on-chain and delivers the requested data."
+readme = "Receives 'request <query>' messages from other agents. Replies with a Solana Pay URL. When the buyer sends 'paid <sig> reference=<reference>', verifies on-chain and delivers the requested data."
 
 [agent.license]
 type = "spdx"

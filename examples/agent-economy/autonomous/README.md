@@ -19,7 +19,7 @@ both agents and the buyer begins its purchase loop.
 Watch it settle:
 
 ```sh
-docker logs -f buyer-agent     # "paying memo=…" → "received data"
+docker logs -f buyer-agent     # "paying reference=…" → "received data"
 docker logs -f seller-agent    # "payment verified — delivering service"
 ```
 

@@ -41,26 +41,26 @@ async function main() {
   const order = await fetch(`${BRIDGE}/order`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ service: 'jupiter' }),
-  }).then(r => r.json()) as { memo?: string; amountSol?: string; recipient?: string; error?: string }
-  if (order.error || !order.memo || !order.recipient) throw new Error(`order failed: ${JSON.stringify(order)}`)
-  console.error(`[smoke] order memo=${order.memo} amount=${order.amountSol} → ${order.recipient}`)
+  }).then(r => r.json()) as { reference?: string; amountSol?: string; recipient?: string; error?: string }
+  if (order.error || !order.reference || !order.recipient) throw new Error(`order failed: ${JSON.stringify(order)}`)
+  console.error(`[smoke] order reference=${order.reference} amount=${order.amountSol} → ${order.recipient}`)
 
-  // 2. Pay it from the keypair (stands in for the Phantom click).
+  // 2. Pay it from the keypair (stands in for the Phantom click), writing the reference key in.
   const { blockhash } = await conn.getLatestBlockhash()
-  const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: blockhash }).add(
-    SystemProgram.transfer({
-      fromPubkey: payer.publicKey,
-      toPubkey: new PublicKey(order.recipient),
-      lamports: Math.round(Number(order.amountSol) * LAMPORTS_PER_SOL),
-    }),
-  )
+  const ix = SystemProgram.transfer({
+    fromPubkey: payer.publicKey,
+    toPubkey: new PublicKey(order.recipient),
+    lamports: Math.round(Number(order.amountSol) * LAMPORTS_PER_SOL),
+  })
+  ix.keys.push({ pubkey: new PublicKey(order.reference), isSigner: false, isWritable: false })
+  const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: blockhash }).add(ix)
   tx.sign(payer)
   const sig = await conn.sendRawTransaction(tx.serialize())
   await conn.confirmTransaction(sig, 'confirmed')
   console.error(`[smoke] paid sig=${sig}`)
 
   // 3. Submit proof, expect delivery.
-  const done = await fetch(`${BRIDGE}/order/${order.memo}/paid`, {
+  const done = await fetch(`${BRIDGE}/order/${order.reference}/paid`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sig }),
   }).then(r => r.json()) as { status?: string; data?: string; error?: string }

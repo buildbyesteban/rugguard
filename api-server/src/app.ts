@@ -14,6 +14,18 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// ── Optional auth ─────────────────────────────────────────────────────────────
+// If `API_TOKEN` is set, every `/api/*` route requires `Authorization: Bearer <API_TOKEN>`.
+// Unset (the devnet/localhost default) leaves the API open so the demo runs key-free. Set it for
+// any shared/exposed deployment — the routes below can otherwise create/drive agents and read/write
+// shared state. `/health` stays open for liveness probes.
+const API_TOKEN = process.env.API_TOKEN
+app.use('/api', (req, res, next) => {
+  if (!API_TOKEN) return next()
+  if (req.header('authorization') === `Bearer ${API_TOKEN}`) return next()
+  res.status(401).json({ error: 'unauthorized' })
+})
+
 // ── Health ──────────────────────────────────────────────────────────────────
 
 /** `GET /health` — liveness probe used by Docker and CI. */

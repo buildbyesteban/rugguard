@@ -49,7 +49,7 @@ export function getBuyerPublicKey(): string {
  * Parse a `solana:` pay URL, verify the amount is within budget, and broadcast
  * the transfer transaction. Returns the confirmed transaction signature.
  *
- * @param solanaPayUrl - A Solana Pay transfer URL (`solana:<recipient>?amount=X&memo=Y`).
+ * @param solanaPayUrl - A Solana Pay transfer URL (`solana:<recipient>?amount=X&reference=Y`).
  * @param maxSol       - Maximum SOL the buyer is authorised to spend per call.
  * @throws if the amount is invalid, exceeds `maxSol`, or the transaction fails.
  */
@@ -59,6 +59,7 @@ export async function payFromUrl(solanaPayUrl: string, maxSol: number): Promise<
   const url = new URL(raw)
   const recipient = new PublicKey(url.hostname || url.pathname.replace(/^\/\//, ''))
   const amountSol = parseFloat(url.searchParams.get('amount') ?? '0')
+  const reference = url.searchParams.get('reference')
 
   if (amountSol <= 0) throw new Error('Invalid amount in Solana Pay URL')
   if (amountSol > maxSol) throw new Error(`Amount ${amountSol} SOL exceeds budget ${maxSol} SOL`)
@@ -66,14 +67,18 @@ export async function payFromUrl(solanaPayUrl: string, maxSol: number): Promise<
   const keypair = loadKeypair()
   const conn = new Connection(process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com')
 
-  const tx = new Transaction().add(
-    SystemProgram.transfer({
-      fromPubkey: keypair.publicKey,
-      toPubkey: recipient,
-      lamports: Math.round(amountSol * LAMPORTS_PER_SOL),
-    }),
-  )
+  const ix = SystemProgram.transfer({
+    fromPubkey: keypair.publicKey,
+    toPubkey: recipient,
+    lamports: Math.round(amountSol * LAMPORTS_PER_SOL),
+  })
+  // Write the reference key into the transfer (read-only, non-signer) so the seller can verify the
+  // payment is bound to this specific request via Solana Pay's reference mechanism.
+  if (reference) {
+    ix.keys.push({ pubkey: new PublicKey(reference), isSigner: false, isWritable: false })
+  }
 
+  const tx = new Transaction().add(ix)
   const sig = await sendAndConfirmTransaction(conn, tx, [keypair], { commitment: 'confirmed' })
   console.error(`[buyer-agent] paid ${amountSol} SOL → ${recipient.toBase58()} sig=${sig}`)
   return sig

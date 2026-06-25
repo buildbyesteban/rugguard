@@ -11,15 +11,15 @@ play money) but would be real on mainnet / when exposed. Severities below assume
 
 ## Findings at a glance
 
-| # | Severity | Finding | Exploitable as-shipped? |
-|---|----------|---------|--------------------------|
-| **H1** | 🔴 High | Seller payment proof not bound to the request (memo not checked on-chain) | Yes, within a session |
-| **H2** | 🟠 High | Prompt injection can redirect the LLM buyer's payment to an attacker | Yes, if the buyer fetches attacker-influenced data |
-| **H3** | 🟠 High | Dependency vulnerabilities (1 critical / 5 high / 7 moderate) | Transitive; mostly not prod-reachable |
-| **M1** | 🟡 Med | `api-server` has **no authentication** on agent CRUD / shared-state | Only if port is exposed |
-| **M2** | 🟡 Med | coral-server auth defaults to `"dev"` + `allowAnyHost = true` | Only if port is exposed |
-| **M3** | 🟡 Med | Buyer budget is per-payment, not cumulative (×`maxTurns`) | Bounded over-spend |
-| **L1–L4** | 🟢 Low | `confirmed` vs `finalized`, no pre-sign simulation, API key in URL, no explicit `meta.err` check | Minor |
+| # | Severity | Finding | Status |
+|---|----------|---------|--------|
+| **H1** | 🔴 High | Seller payment proof not bound to the request (memo not checked on-chain) | ✅ **FIXED** — reference-bound (`validateTransfer`); verified live |
+| **H2** | 🟠 High | Prompt injection can redirect the LLM buyer's payment to an attacker | ✅ **FIXED** — recipient/reference code-validated vs challenge |
+| **H3** | 🟠 High | Dependency vulnerabilities (1 critical / 5 high / 7 moderate) | ⏳ deferred — `@solana/kit` migration (mostly transitive/dev) |
+| **M1** | 🟡 Med | `api-server` has **no authentication** on agent CRUD / shared-state | ✅ **FIXED** — optional bearer (`API_TOKEN`) |
+| **M2** | 🟡 Med | coral-server auth defaults to `"dev"` + `allowAnyHost = true` | ◽ devnet default (override via `CORAL_TOKEN`) — documented |
+| **M3** | 🟡 Med | Buyer budget is per-payment, not cumulative (×`maxTurns`) | ✅ **FIXED** — cumulative cap across the loop |
+| **L1–L4** | 🟢 Low | `confirmed` vs `finalized`, no pre-sign simulation, API key in URL, no explicit `meta.err` check | open (minor) |
 
 ---
 
@@ -142,13 +142,17 @@ keeps returning fresh 402s can make the agent pay up to `maxTurns` (default 8) �
 
 ---
 
-## Priority to fix
+## Status
 
-1. **H2** (prompt-injection recipient binding) — small, contained, and it's an *agent-economy*-defining
-   bug (an agent that pays attackers is the worst failure mode). Do this first.
-2. **H1** (reference-bind the seller) — the right fix for payment-proof theft; the quickstart is the
-   template.
-3. **M1/M2** (auth) before anything leaves localhost.
-4. **H3** (`@solana/kit` migration) clears most dep vulns; medium-term.
+**H1, H2, M3, M1 are fixed** (this session). H1 (reference-binding) was **verified live** — the
+human path generated a reference, the payment wrote it into the tx, and `validateTransfer` confirmed
+the proof was bound to it before delivery. Seller payment tests rewritten for the reference path
+(6 pass). Remaining:
+
+- **H3** — `@solana/kit` migration (medium-term; mostly transitive / dev-only). See
+  [`docs/PRODUCTION_HARDENING.md`](../docs/PRODUCTION_HARDENING.md) §5/§H3.
+- **M2** — coral `"dev"` token is the intentional devnet default (overridable via `CORAL_TOKEN`);
+  set a real token + drop `allowAnyHost` before exposing the port.
+- **L1–L4** — minor, open.
 
 See also [`docs/PRODUCTION_HARDENING.md`](../docs/PRODUCTION_HARDENING.md).

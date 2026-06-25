@@ -1,7 +1,6 @@
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
-import { encodeURL } from '@solana/pay'
+import { Connection, PublicKey, Keypair } from '@solana/web3.js'
+import { encodeURL, validateTransfer } from '@solana/pay'
 import BigNumber from 'bignumber.js'
-import { randomUUID } from 'crypto'
 
 /** Lazy connection factory so each call gets a fresh `Connection` (safe across async boundaries). */
 const connection = () =>
@@ -9,17 +8,22 @@ const connection = () =>
 
 /** Return value from `generatePaymentUrl`. */
 export interface PaymentUrl {
-  /** Full `solana:` URL encoding the transfer request. */
+  /** Full `solana:` URL encoding the transfer request (recipient, amount, reference). */
   url: string
-  /** Short random memo that ties this URL to an entry in the `pending` map. */
-  memo: string
+  /**
+   * Unique single-use **reference** public key (base58) that binds this payment to this order.
+   * The buyer writes it into the transfer as a read-only account; the seller verifies the payment
+   * carries it. This makes a payment proof non-transferable — a payment for one order can't satisfy
+   * another, and a third party can't steal the signature.
+   */
+  reference: string
   /** Requested amount in SOL. */
   amountSol: number
 }
 
 /**
- * Generate a Solana Pay transfer URL for the given buyer `request` string.
- * The memo is a random 8-character prefix of a UUIDv4 — unique per payment request.
+ * Generate a Solana Pay transfer URL for the given buyer `request` string, tagged with a unique
+ * reference key.
  *
  * Requires:
  * - `SELLER_WALLET` — base58 public key of the seller's wallet.
@@ -30,59 +34,44 @@ export function generatePaymentUrl(request: string): PaymentUrl {
   if (!recipient) throw new Error('SELLER_WALLET not set')
 
   const amountSol = parseFloat(process.env.PRICE_SOL ?? '0.0001')
-  const memo = `pay-${randomUUID().slice(0, 8)}`
+  const reference = Keypair.generate().publicKey // unique per request — single-use binding
 
   const url = encodeURL({
     recipient: new PublicKey(recipient),
     amount: new BigNumber(amountSol),
-    memo,
+    reference,
     label: 'Agent Service',
     message: request.slice(0, 100),
   })
 
-  return { url: url.toString(), memo, amountSol }
+  return { url: url.toString(), reference: reference.toBase58(), amountSol }
 }
 
 /**
- * Verify that `sig` is a confirmed on-chain transaction that transferred at
- * least `PRICE_SOL` to `SELLER_WALLET`.
+ * Verify that `sig` is a confirmed transaction transferring `PRICE_SOL` to `SELLER_WALLET` **and
+ * carrying `reference`**. Binding to the per-request reference is what makes the proof
+ * non-transferable (see `PaymentUrl.reference`): unlike an amount+recipient check, a payment for one
+ * order cannot be reused for another, and a stolen signature won't validate against a different
+ * reference.
  *
- * A 1 % tolerance is applied to the expected amount to account for rounding.
+ * Uses Solana Pay's `validateTransfer`, which checks recipient, amount, and reference together.
  *
- * @returns `true` if the payment is valid, `false` otherwise (including on RPC errors).
+ * @returns `true` if the payment is valid, `false` otherwise (including on RPC / validation errors).
  */
-export async function verifyPayment(sig: string, memo: string): Promise<boolean> {
+export async function verifyPayment(sig: string, reference: string): Promise<boolean> {
   try {
     const conn = connection()
-    const tx = await conn.getTransaction(sig, {
-      commitment: 'confirmed',
-      maxSupportedTransactionVersion: 0,
-    })
-
-    if (!tx) return false
-
-    const recipient = process.env.SELLER_WALLET!
-    const recipientPubkey = new PublicKey(recipient)
-
-    // `getAccountKeys()` is available on versioned transactions; the legacy
-    // `accountKeys` array is used as a fallback via `as any` for older TX versions.
-    const accountKeys = tx.transaction.message.getAccountKeys
-      ? tx.transaction.message.getAccountKeys()
-      : { staticAccountKeys: (tx.transaction.message as any).accountKeys }
-
-    const keys = accountKeys.staticAccountKeys ?? (accountKeys as any)
-    const recipientIndex = Array.from({ length: keys.length }, (_, i) =>
-      keys[i]?.toBase58?.() ?? keys[i]?.toString?.(),
-    ).indexOf(recipientPubkey.toBase58())
-
-    if (recipientIndex === -1) return false
-
-    const preLamports = tx.meta?.preBalances?.[recipientIndex] ?? 0
-    const postLamports = tx.meta?.postBalances?.[recipientIndex] ?? 0
-    const received = (postLamports - preLamports) / LAMPORTS_PER_SOL
-
-    const expected = parseFloat(process.env.PRICE_SOL ?? '0.0001')
-    return received >= expected * 0.99 // 1 % tolerance
+    await validateTransfer(
+      conn,
+      sig,
+      {
+        recipient: new PublicKey(process.env.SELLER_WALLET!),
+        amount: new BigNumber(parseFloat(process.env.PRICE_SOL ?? '0.0001')),
+        reference: new PublicKey(reference),
+      },
+      { commitment: 'confirmed' },
+    )
+    return true
   } catch {
     return false
   }

@@ -23,7 +23,7 @@ SELLER_WALLET=<devnet pubkey> npm start     # bridge on :3010, serves the UI
 ```
 Browser → POST /order { service }              → seller PAYMENT_REQUIRED (read from session state)
 Phantom signs + sends the SOL transfer → sig
-Browser → POST /order/:memo/paid { sig }       → seller verifies on-chain → DELIVERED
+Browser → POST /order/:reference/paid { sig }       → seller verifies on-chain → DELIVERED
 ```
 
 ## Files

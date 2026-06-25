@@ -3,5 +3,8 @@
     "allow": [
       "WebFetch(domain:www.coralos.ai)"
     ]
+  },
+  "enabledPlugins": {
+    "coral-skills@coral-skill-set": true
   }
 }

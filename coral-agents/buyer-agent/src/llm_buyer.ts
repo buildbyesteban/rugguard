@@ -106,6 +106,15 @@ export class LLMBuyerStrategy extends BaseStrategy {
 
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: this.config.goal }]
 
+    // Code-enforced trust, not prompt-enforced. Prompt injection in fetched data cannot bypass these.
+    const purchase: PurchaseGuard = {
+      // recipients (and references) the buyer actually saw in a real 402 challenge
+      allowedRecipients: new Set<string>(),
+      allowedReferences: new Set<string>(),
+      // cumulative spend across the whole loop, capped at budgetLamports
+      spentLamports: 0,
+    }
+
     for (let turn = 0; turn < maxTurns; turn++) {
       const resp = await llm.messages.create({
         model: this.config.model ?? 'claude-haiku-4-5-20251001',
@@ -127,7 +136,7 @@ export class LLMBuyerStrategy extends BaseStrategy {
 
       const results: Anthropic.ToolResultBlockParam[] = []
       for (const tu of toolUses) {
-        results.push(await this.runTool(tu, state))
+        results.push(await this.runTool(tu, state, purchase))
       }
       messages.push({ role: 'user', content: results })
     }
@@ -138,12 +147,18 @@ export class LLMBuyerStrategy extends BaseStrategy {
   private async runTool(
     tu: Anthropic.ToolUseBlock,
     state: MutableAgentState,
+    guard: PurchaseGuard,
   ): Promise<Anthropic.ToolResultBlockParam> {
     if (tu.name === 'fetch_data') {
       const r = await fetch(this.config.endpoint)
       if (r.status === 402) {
         const body = await r.text()
         const challenge = parse402(r.headers, body)
+        if (challenge) {
+          // Record the legitimate recipient/reference so `pay_and_retry` can only pay these.
+          guard.allowedRecipients.add(challenge.recipient)
+          if (challenge.reference) guard.allowedReferences.add(challenge.reference)
+        }
         state.recordAction('payment-challenge', JSON.stringify(challenge))
         return { type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify({ status: 402, challenge }) }
       }
@@ -153,16 +168,33 @@ export class LLMBuyerStrategy extends BaseStrategy {
 
     if (tu.name === 'pay_and_retry') {
       const input = tu.input as { recipient: string; amountSol: number; reference?: string }
-      // SAFETY: budget enforced in code, not the prompt. The model cannot overspend.
-      if (input.amountSol * LAMPORTS_PER_SOL > this.config.budgetLamports) {
+      const lamports = Math.round(input.amountSol * LAMPORTS_PER_SOL)
+
+      // H2: the recipient MUST come from a challenge we actually received. The "only pay real
+      // challenges" rule is enforced here in code — a prompt injection in fetched data cannot
+      // make the buyer pay an attacker's address.
+      if (!guard.allowedRecipients.has(input.recipient)) {
         return {
-          type: 'tool_result',
-          tool_use_id: tu.id,
-          is_error: true,
-          content: `budget exceeded: ${input.amountSol} SOL > ${this.config.budgetLamports / LAMPORTS_PER_SOL} SOL`,
+          type: 'tool_result', tool_use_id: tu.id, is_error: true,
+          content: `refused: recipient ${input.recipient} did not appear in any payment challenge`,
         }
       }
+      if (input.reference && !guard.allowedReferences.has(input.reference)) {
+        return {
+          type: 'tool_result', tool_use_id: tu.id, is_error: true,
+          content: `refused: reference ${input.reference} did not appear in any payment challenge`,
+        }
+      }
+      // M3: budget is cumulative across the loop, not per-payment.
+      if (guard.spentLamports + lamports > this.config.budgetLamports) {
+        return {
+          type: 'tool_result', tool_use_id: tu.id, is_error: true,
+          content: `budget exceeded: cumulative ${(guard.spentLamports + lamports) / LAMPORTS_PER_SOL} SOL > ${this.config.budgetLamports / LAMPORTS_PER_SOL} SOL`,
+        }
+      }
+
       const sig = await signTransfer(input.recipient, input.amountSol, input.reference)
+      guard.spentLamports += lamports
       state.recordAction('payment-sent', `${input.amountSol} SOL`, sig)
       const retry = await fetch(this.config.endpoint, { headers: { 'x-payment-proof': sig } })
       const body = await retry.text()
@@ -171,4 +203,11 @@ export class LLMBuyerStrategy extends BaseStrategy {
 
     return { type: 'tool_result', tool_use_id: tu.id, is_error: true, content: `unknown tool: ${tu.name}` }
   }
+}
+
+/** Per-purchase, code-enforced trust state: which recipients/references are payable, and total spent. */
+interface PurchaseGuard {
+  allowedRecipients: Set<string>
+  allowedReferences: Set<string>
+  spentLamports: number
 }

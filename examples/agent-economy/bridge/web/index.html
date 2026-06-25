@@ -97,23 +97,27 @@ $('buy').onclick = async () => {
     $('quote').style.display = 'block'
     $('recipient').textContent = order.recipient.slice(0,4)+'…'+order.recipient.slice(-4)
     $('amount').textContent = `${order.amountSol} SOL`
-    log(`<div class="step">Order opened</div><div class="row"><span>memo</span><b>${order.memo}</b></div>`)
+    log(`<div class="step">Order opened</div><div class="row"><span>reference</span><b>${order.reference.slice(0,8)}…</b></div>`)
 
-    // 2. Build + sign a plain transfer of amountSol to the seller (what verifyPayment checks).
+    // 2. Build + sign the transfer, writing the order's reference key into it (read-only) so the
+    //    seller can verify the payment is bound to THIS order.
     $('buy').textContent = 'Approve in Phantom…'
     const { blockhash } = await conn.getLatestBlockhash()
-    const tx = new web3.Transaction({ feePayer: provider.publicKey, recentBlockhash: blockhash })
-    tx.add(web3.SystemProgram.transfer({
+    const ix = web3.SystemProgram.transfer({
       fromPubkey: provider.publicKey,
       toPubkey: new web3.PublicKey(order.recipient),
       lamports: Math.round(Number(order.amountSol) * web3.LAMPORTS_PER_SOL),
-    }))
+    })
+    if (order.reference) {
+      ix.keys.push({ pubkey: new web3.PublicKey(order.reference), isSigner: false, isWritable: false })
+    }
+    const tx = new web3.Transaction({ feePayer: provider.publicKey, recentBlockhash: blockhash }).add(ix)
     const { signature } = await provider.signAndSendTransaction(tx)
     log(`<div class="step">Paid on-chain</div><div class="row"><span>tx</span><b><a target="_blank" href="https://explorer.solana.com/tx/${signature}?cluster=devnet">${signature.slice(0,8)}…</a></b></div>`)
 
     // 3. Send proof to the seller; wait for delivery.
     $('buy').textContent = 'Seller verifying + delivering…'
-    const done = await fetch(`${SERVER}/order/${order.memo}/paid`, {
+    const done = await fetch(`${SERVER}/order/${order.reference}/paid`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ sig: signature }),
     }).then(r => r.json())

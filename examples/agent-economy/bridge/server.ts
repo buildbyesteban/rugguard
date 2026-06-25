@@ -6,9 +6,9 @@
  * routed to the same `seller-agent` the autonomous buyer uses. The human pays the seller's Solana
  * Pay URL with Phantom; the seller verifies on-chain and delivers. One protocol, two front doors.
  *
- *   Browser → POST /order            { service }       → { memo, amountSol, solanaPayUrl }
- *   (Phantom signs + sends the SOL transfer → sig)
- *   Browser → POST /order/:memo/paid { sig }           → { status: 'delivered', data }
+ *   Browser → POST /order                 { service } → { reference, amountSol, solanaPayUrl, recipient }
+ *   (Phantom signs a transfer that writes the reference key in → sig)
+ *   Browser → POST /order/:reference/paid { sig }     → { status: 'delivered', data }
  *
  * Env: CORAL_SERVER_URL, CORAL_TOKEN, SELLER_WALLET (required), PRICE_SOL, SERVICE,
  *      SOLANA_RPC_URL, ANTHROPIC_API_KEY, PORT (default 3010).
@@ -132,13 +132,15 @@ app.post('/order', async (req, res) => {
     await inject(sid, threadId, `request ${service}`)
     const text = await pollThread(sid, threadId, 'PAYMENT_REQUIRED')
 
-    const memo = text.match(/memo=([A-Za-z0-9-]+)/)?.[1]
+    // The reference is a base58 pubkey that binds this payment to this order (the field appears
+    // before the url=, so the first match is the standalone reference, not the one in the URL).
+    const reference = text.match(/reference=([1-9A-HJ-NP-Za-km-z]{32,44})/)?.[1]
     const amountSol = text.match(/amount=([\d.]+)/)?.[1]
     const solanaPayUrl = text.match(/url=(solana:[^\s"\\]+)/)?.[1]
-    if (!memo || !solanaPayUrl) throw new Error('could not parse seller PAYMENT_REQUIRED')
+    if (!reference || !solanaPayUrl) throw new Error('could not parse seller PAYMENT_REQUIRED')
 
-    orders.set(memo, { threadId })
-    res.json({ memo, amountSol: amountSol ?? PRICE_SOL, solanaPayUrl, recipient: SELLER_WALLET })
+    orders.set(reference, { threadId })
+    res.json({ reference, amountSol: amountSol ?? PRICE_SOL, solanaPayUrl, recipient: SELLER_WALLET })
   } catch (e) {
     console.error(`[bridge] /order error: ${e}`)
     res.status(502).json({ error: (e as Error).message })
@@ -146,21 +148,21 @@ app.post('/order', async (req, res) => {
 })
 
 // 2. Submit payment proof — tell the seller, wait for delivery.
-app.post('/order/:memo/paid', async (req, res) => {
+app.post('/order/:reference/paid', async (req, res) => {
   try {
-    const memo = req.params.memo
+    const reference = req.params.reference
     const sig = String(req.body?.sig ?? '')
-    const order = orders.get(memo)
-    if (!order) return res.status(404).json({ error: `unknown memo ${memo}` })
+    const order = orders.get(reference)
+    if (!order) return res.status(404).json({ error: `unknown reference ${reference}` })
     if (!sig) return res.status(400).json({ error: 'sig required' })
 
     const sid = await ensureSession()
-    await inject(sid, order.threadId, `paid ${sig} memo=${memo}`)
+    await inject(sid, order.threadId, `paid ${sig} reference=${reference}`)
     const text = await pollThread(sid, order.threadId, 'DELIVERED')
 
     // DELIVERED <data> — grab the seller's delivered payload (rest of the message).
     const data = text.match(/DELIVERED\s+([\s\S]+)/)?.[1]?.trim()
-    orders.delete(memo)
+    orders.delete(reference)
     res.json({ status: 'delivered', sig, data: data ?? '(delivered)' })
   } catch (e) {
     console.error(`[bridge] /paid error: ${e}`)

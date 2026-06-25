@@ -62,7 +62,7 @@ Creates a session naming `[buyer-agent, seller-agent]` (passing each agent's req
 `.env`). coral spawns both; the buyer opens a thread and runs the loop. Watch it settle:
 
 ```sh
-docker logs -f buyer-agent     # "paying memo=…" → "received data"
+docker logs -f buyer-agent     # "paying reference=…" → "received data"
 docker logs -f seller-agent    # "payment verified — delivering service"
 ```
 

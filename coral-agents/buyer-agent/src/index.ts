@@ -3,9 +3,9 @@
  *
  * Purchase loop (one cycle):
  * 1. Send `request <query>` to seller via CoralOS thread.
- * 2. Wait for `PAYMENT_REQUIRED memo=<m> amount=<sol> url=<solana:...>` response.
+ * 2. Wait for `PAYMENT_REQUIRED reference=<r> amount=<sol> url=<solana:...>` response.
  * 3. Pay the Solana Pay URL from the buyer wallet.
- * 4. Send `paid <sig> memo=<m>` to seller as proof.
+ * 4. Send `paid <sig> reference=<r>` to seller as proof.
  * 5. Wait for `DELIVERED <data>` response.
  * 6. Summarise the data with Claude Haiku and broadcast the analysis.
  *
@@ -63,20 +63,20 @@ await startCoralAgent({ agentName: 'buyer-agent' }, async (ctx) => {
         continue
       }
 
-      // Parse: PAYMENT_REQUIRED memo=<memo> amount=<sol> url=<solana:...>
-      const memoMatch = payText.match(/memo=(\S+)/)
+      // Parse: PAYMENT_REQUIRED reference=<ref> amount=<sol> url=<solana:...>
+      const refMatch = payText.match(/reference=(\S+)/)
       const urlMatch = payText.match(/url=(solana:\S+)/)
-      const memo = memoMatch?.[1]
+      const reference = refMatch?.[1]
       const solanaUrl = urlMatch?.[1]
 
-      if (!memo || !solanaUrl) {
+      if (!reference || !solanaUrl) {
         console.error('[buyer-agent] could not parse payment details')
         await new Promise(r => setTimeout(r, CYCLE_INTERVAL_MS))
         continue
       }
 
-      // ── 3. Pay ──────────────────────────────────────────────────────────
-      console.error(`[buyer-agent] paying memo=${memo}`)
+      // ── 3. Pay (payFromUrl writes the reference into the transfer) ───────
+      console.error(`[buyer-agent] paying reference=${reference}`)
       let sig: string
       try {
         sig = await payFromUrl(solanaUrl, BUYER_MAX_SOL)
@@ -87,7 +87,7 @@ await startCoralAgent({ agentName: 'buyer-agent' }, async (ctx) => {
       }
 
       // ── 4. Send payment proof to seller ─────────────────────────────────
-      await ctx.send(`paid ${sig} memo=${memo}`, threadId, ['seller-agent'])
+      await ctx.send(`paid ${sig} reference=${reference}`, threadId, ['seller-agent'])
 
       // ── 5. Wait for data delivery ────────────────────────────────────────
       const deliveryMention = await ctx.waitForMention(30_000)

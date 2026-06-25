@@ -87,7 +87,7 @@ async function main() {
   console.log(`   seller wallet: ${wallet}`)
   console.log('   The buyer will open a thread and start its purchase loop.\n')
   console.log('   Watch it settle:')
-  console.log('     docker logs -f buyer-agent     # "paying memo=…" → "received data"')
+  console.log('     docker logs -f buyer-agent     # "paying reference=…" → "received data"')
   console.log('     docker logs -f seller-agent    # "payment verified — delivering service"')
   console.log('   Each payment is a real devnet tx — paste the sig into explorer.solana.com (?cluster=devnet).\n')
 }
