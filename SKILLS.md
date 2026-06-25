@@ -15,45 +15,55 @@ Two optional Claude Code skill sets that extend the IDE with commands and knowle
 
 ## Coral Protocol Skills
 
-Install inside Claude Code:
+Install inside Claude Code — run these three as slash commands:
 
 ```
 /plugin marketplace add Coral-Protocol/coral-skill-set
+/plugin install coral-skills@coral-skill-set
 /reload-plugins
 ```
 
-Adds five slash commands for working with CoralOS multi-agent sessions.
+Adds slash commands for working with CoralOS multi-agent sessions.
 
 ### Commands
 
 | Command | What it does |
 |---------|-------------|
-| `/coral-setup` | Install and configure a local CoralOS server into `~/.coral/coral-server` |
-| `/coral-built-in-agent-setup` | Add pre-built agents (Claude Code, Hermes, Puppet) to a CoralOS session |
-| `/coralize-your-agent` | Connect your existing agent project to CoralOS (supports Mastra and custom frameworks) |
-| `/coral-agent-swarm` | Orchestrate a multi-agent session — spawn agents, send tasks, collect results |
-| `/coral-encyclopedia` | Query CoralOS concepts, API reference, and agent development patterns |
+| `/coral-setup` | Start, stop, inspect, and configure Coral Server |
+| `/coral-runtime-reference` | The current machine-readable Coral API/schema reference |
+| `/coral-session-control` | Operate Coral sessions via REST, Puppet, events, and extended state |
+| `/coralize-your-agent` | Link or wrap a developer-owned agent for Coral discovery |
+| `/coral-built-in-agent-setup` | Copy and verify packaged example agent templates |
+| `/coral-app-integration` | Identify app, conductor, Cloud Console, and deployment boundaries |
+| `/coral-coordination-topologies` | Map communication-topology vocabulary onto Coral session primitives |
 
 ### How it applies to this repo
 
 | Coral Skill | This Repo |
 |-------------|-----------|
-| `/coral-setup` | Starts the CoralOS Docker container that provides `CORAL_CONNECTION_URL` to `coral-agents/` |
-| `/coral-agent-swarm` | Drives `CoralMcpAgent` in `packages/agent-runtime/src/coral_mcp.ts` |
-| `/coralize-your-agent` | Connects a new strategy to `POST /api/v1/agents/:id/handle` in `api-server/` |
+| `/coral-setup` | Starts the coral-server this kit connects to — provides `CORAL_CONNECTION_URL` to `coral-agents/` |
+| `/coral-session-control` | Drives sessions/threads via the **same REST + Puppet API** that `examples/agent-economy/bridge/` and `autonomous/start.ts` use |
+| `/coral-runtime-reference` | The API/schema reference behind `packages/agent-runtime/src/coral_mcp.ts` |
+| `/coralize-your-agent` | Wire a new agent into the economy (fork point: `coral-agents/`) |
 
-- Use `/coral-built-in-agent-setup` to add the Puppet agent alongside your TypeScript agents
-- Use `/coralize-your-agent` when you fork and want to wire a new custom agent into the swarm
+- Use `/coral-built-in-agent-setup` to add the Puppet (`user-proxy`) agent alongside your TypeScript agents
+- Use `/coralize-your-agent` when you fork and want to wire a new custom agent in
 
 ---
 
 ## Solana Dev Skill
 
 ```sh
+# project-level (vendors the skill into the current repo):
 npx skills add https://github.com/solana-foundation/solana-dev-skill
+
+# or user-level (available in every project, nothing committed) — recommended:
+npx skills add https://github.com/solana-foundation/solana-dev-skill --global --yes
 ```
 
-Adds Solana ecosystem knowledge and tooling to Claude Code — SDK usage, Anchor programs, testing, token extensions, and payments.
+Installed via the [`skills`](https://github.com/vercel-labs/skills) CLI (vercel-labs). It symlinks
+into Claude Code (and other agents) and runs a safety scan on install. Adds Solana ecosystem
+knowledge and tooling — SDK usage, Anchor programs, testing, token extensions, and payments.
 
 ### What it adds
 
@@ -85,21 +95,18 @@ Adds Solana ecosystem knowledge and tooling to Claude Code — SDK usage, Anchor
 ### Start a full demo session with skills
 
 ```sh
-# 1. Start CoralOS
+# 1. Start coral-server (the skill helps you configure it)
 /coral-setup
+docker compose up -d coral
 
-# 2. Start the TypeScript API
-cd api-server && npm run dev
+# 2. Launch the autonomous economy (agent → agent)
+cd examples/agent-economy/autonomous && npm install && npm start
+# → coral spawns seller-agent + buyer-agent
+# → buyer requests → seller replies with a Solana Pay URL
+# → buyer pays on devnet → seller verifies on-chain (getTransaction) → delivers
 
-# 3. Start the web frontend
-cd web && npm run dev
-
-# 4. Open Claude Code and launch the swarm
-/coral-agent-swarm
-# → CoralOS spawns Seller agent + Buyer agent
-# → Agents join via CORAL_CONNECTION_URL
-# → Seller replies with a Solana Pay URL
-# → Buyer pays on devnet, Seller verifies on-chain (getTransaction), Seller delivers
+# 3. Inspect the live session with the skill
+/coral-session-control     # read threads, messages, and extended state
 ```
 
 ### Write a new Anchor program with skill assistance

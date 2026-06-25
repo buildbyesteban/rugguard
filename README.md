@@ -105,6 +105,28 @@ All verification is on-chain. No off-chain trust.
 > payment rail (x402/CORAL token) is **not** used — it's half-built upstream — so the kit settles in
 > plain SOL, which works end-to-end. Details in `.claude/AGENT_ECONOMY_RESTRUCTURE.md`.
 
+## Optional: Claude Code skills
+
+Two skill sets make building on this kit easier — see [SKILLS.md](SKILLS.md) for the full guide.
+
+**Solana dev skill** (Solana SDK, Anchor, testing, payments) — install via the `skills` CLI:
+
+```sh
+npx skills add https://github.com/solana-foundation/solana-dev-skill --global --yes
+```
+
+**Coral Protocol skills** (drive coral-server sessions from Claude Code) — run these *inside Claude
+Code* as slash commands:
+
+```
+/plugin marketplace add Coral-Protocol/coral-skill-set
+/plugin install coral-skills@coral-skill-set
+/reload-plugins
+```
+
+Then `/coral-setup`, `/coral-session-control`, `/coralize-your-agent`, etc. Restart Claude Code (or
+reload) after installing so the skills load.
+
 ## License
 
 MIT
