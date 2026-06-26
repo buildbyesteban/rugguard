@@ -15,8 +15,9 @@ default:
 dev: setup build up
     @echo Agent economy is up: coral + bridge.
     @echo FUND the 2 printed wallets at https://faucet.solana.com - sign in with GitHub - before the agents can pay.
-    @echo Then open http://localhost:3010 and click Run in the Autonomous tab. Give the agents ~20s on first run.
+    @echo Opening http://localhost:3010 - click Run in the Autonomous tab. Give the agents ~20s on first run.
     @echo Logs: just logs -- Stop: just down
+    @just open
 
 # generate the devnet wallets (fund them manually at the faucet)
 setup:
@@ -32,6 +33,10 @@ build:
 # start coral-server + the bridge (serves the demo UI on :3010)
 up:
     docker compose up -d coral bridge
+
+# open the demo UI in your default browser (cross-platform)
+open:
+    -{{ if os() == "windows" { "start" } else if os() == "macos" { "open" } else { "xdg-open" } }} http://localhost:3010
 
 # readiness check: Docker, Node, wallets funded, coral/bridge up, one live payment
 doctor:
