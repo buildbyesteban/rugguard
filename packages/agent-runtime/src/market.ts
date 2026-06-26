@@ -90,8 +90,11 @@ export function parseBid(text: string): Bid | null {
 }
 
 // ── AWARD ─────────────────────────────────────────────────────────────────────
-export function formatAward(round: number, to: string): string {
-  return `AWARD round=${round} to=${to}`
+export function formatAward(round: number, to: string, reason?: string): string {
+  const base = `AWARD round=${round} to=${to}`
+  // The buyer's best-value justification, surfaced into the transcript (quotes neutralized so it
+  // doesn't break parsing). The visualizer reads it via reason="…".
+  return reason ? `${base} reason="${reason.replace(/"/g, "'")}"` : base
 }
 export function parseAward(text: string): { round: number; to: string } | null {
   if (verb(text) !== 'AWARD') return null

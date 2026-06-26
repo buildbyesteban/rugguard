@@ -49,6 +49,18 @@ seller-cheap   DELIVERED round=1 {"coin":"solana","usd":…}
 | `TRACE=1` | log the `coral_*` calls + Explorer links for the escrow PDA, deposit, and release |
 | `BUYER_MAX_SOL` | the budget cap each round |
 
+## Visualize it (optional React dashboard)
+
+Watch the auction in a browser instead of the logs — a read-only visualizer (no wallet) that renders
+each round's bids, the winner + reasoning, and the escrow settlement with Explorer links:
+
+```sh
+just feed            # the feed server on :4000 (in another shell)
+just dashboard       # the UI on :5173 → open ?session=<the market session id>
+```
+
+It's e2e-tested with fixtures (no devnet needed) — see [`web/`](web/README.md).
+
 ## Demo flourishes
 
 - **Drop in a competitor live:** add a fourth seller to `start.ts`'s graph — it bids next round with

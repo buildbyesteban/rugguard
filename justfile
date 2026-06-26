@@ -34,6 +34,14 @@ up:
 market:
     cd examples/marketplace && npm install --no-audit --no-fund && npm start
 
+# the visualizer feed server — reads coral's transcript (set SESSION=<id> or pass ?session= in the UI)
+feed:
+    cd examples/marketplace/feed && npm install --no-audit --no-fund && npm start
+
+# the visualizer UI on :5173 — run `just feed` in another shell, then open ?session=<the market session id>
+dashboard:
+    cd examples/marketplace/web && npm install --no-audit --no-fund && npm run dev
+
 # readiness check: Docker, Node, wallets funded, coral up
 doctor:
     cd scripts && npm install --no-audit --no-fund

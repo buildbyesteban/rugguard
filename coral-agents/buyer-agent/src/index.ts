@@ -37,9 +37,9 @@ const trace = process.env.TRACE === '1'
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const expl = (kind: 'tx' | 'address', id: string) => `https://explorer.solana.com/${kind}/${id}?cluster=devnet`
 
-/** Best-value selection via LLM; deterministic cheapest fallback. */
-async function pickWinner(pool: Bid[]): Promise<Bid> {
-  if (pool.length === 1) return pool[0]
+/** Best-value selection via LLM; deterministic cheapest fallback. Returns the winner + its reasoning. */
+async function pickWinner(pool: Bid[]): Promise<{ winner: Bid; reason?: string }> {
+  if (pool.length === 1) return { winner: pool[0] }
   try {
     const system =
       'You are a buyer choosing the best-value bid for a Solana data service. ' +
@@ -51,12 +51,12 @@ async function pickWinner(pool: Bid[]): Promise<Bid> {
     const chosen = pool.find((b) => b.by === parsed?.by)
     if (chosen) {
       console.error(`[buyer] picked ${chosen.by} (${chosen.priceSol} SOL): ${parsed?.reason ?? ''}`)
-      return chosen
+      return { winner: chosen, reason: parsed?.reason }
     }
   } catch {
     /* fall through to deterministic choice */
   }
-  return pickCheapest(pool)!
+  return { winner: pickCheapest(pool)!, reason: 'cheapest available' }
 }
 
 /** Wait (bounded) for a message matching `round` that `parse` accepts. */
@@ -106,8 +106,8 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
       if (pool.length === 0) { console.error(`[buyer] round ${round}: NO_SELLERS`); await sleep(CYCLE_MS); continue }
 
       // ── award the best value ──────────────────────────────────────────────
-      const winner = await pickWinner(pool)
-      await ctx.send(formatAward(round, winner.by), thread, [winner.by])
+      const { winner, reason } = await pickWinner(pool)
+      await ctx.send(formatAward(round, winner.by, reason), thread, [winner.by])
 
       // ── settle through escrow: deposit → DEPOSITED → wait DELIVERED → release
       const terms = await waitFor<EscrowTerms>(ctx, round, parseEscrowRequired, 15_000)
