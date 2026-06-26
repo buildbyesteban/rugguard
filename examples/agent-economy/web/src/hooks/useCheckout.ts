@@ -30,7 +30,7 @@ export function useCheckout() {
     tx.recentBlockhash = blockhash
     tx.feePayer = publicKey
 
-    onStep(`Paying ${order.amountSol} SOL — confirm in Phantom…`)
+    onStep(`Paying ${order.amountSol} SOL — confirm in your wallet…`)
     const sig = await sendTransaction(tx, connection)
     await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
 

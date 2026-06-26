@@ -52,7 +52,7 @@ export function CheckoutTab() {
   return (
     <section>
       <p>
-        You are the buyer. Connect Phantom (on Devnet), pick a service, and pay the same seller the
+        You are the buyer. Connect a wallet (on Devnet), pick a service, and pay the same seller the
         autonomous agent uses — one click, settled on-chain.
       </p>
 
@@ -86,7 +86,7 @@ export function CheckoutTab() {
         onClick={pay}
         disabled={!connected || busy || (textCfg?.required && !text.trim())}
       >
-        {busy ? 'Working…' : connected ? 'Buy with Phantom' : 'Connect a wallet first'}
+        {busy ? 'Working…' : connected ? 'Buy' : 'Connect a wallet first'}
       </button>
 
       {steps.length > 0 && (
