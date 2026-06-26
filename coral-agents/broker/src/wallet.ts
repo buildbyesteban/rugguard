@@ -1,12 +1,12 @@
 import {
   Keypair,
-  Connection,
   Transaction,
   SystemProgram,
   PublicKey,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from '@solana/web3.js'
+import { solanaConnection } from '@pay/agent-runtime'
 
 /** Load the broker keypair from BROKER_KEYPAIR_B58 (base58 64-byte, devnet-funded). */
 function loadKeypair(): Keypair {
@@ -42,7 +42,7 @@ export async function payFromUrl(solanaPayUrl: string, maxSol: number): Promise<
   if (amountSol > maxSol) throw new Error(`Amount ${amountSol} SOL exceeds broker budget ${maxSol} SOL`)
 
   const keypair = loadKeypair()
-  const conn = new Connection(process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com')
+  const conn = solanaConnection()
 
   const ix = SystemProgram.transfer({
     fromPubkey: keypair.publicKey,

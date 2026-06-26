@@ -18,6 +18,10 @@ const ENDPOINT = process.env.ENDPOINT ?? 'http://localhost:3001/api/data'
 const BUDGET_LAMPORTS = Number(process.env.BUYER_MAX_SOL ?? 0.001) * LAMPORTS_PER_SOL
 const GOAL = process.env.BUYER_GOAL ?? 'Fetch the SOL→USDC swap quote from the data endpoint.'
 const RPC = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com'
+// Devnet-only guard (standalone — mirrors @pay/agent-runtime's solanaConnection).
+if (process.env.ALLOW_MAINNET !== '1' && /mainnet/i.test(RPC)) {
+  throw new Error(`Refusing mainnet RPC "${RPC}" — this kit is devnet-only. Set ALLOW_MAINNET=1 to override (never with a funded key).`)
+}
 
 interface Challenge { recipient: string; amountSol: number; reference?: string }
 

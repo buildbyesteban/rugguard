@@ -18,6 +18,11 @@ const PORT = Number(process.env.PORT ?? 3001)
 const RECIPIENT = process.env.SELLER_WALLET ?? process.env.WALLET ?? ''
 const PRICE_SOL = Number(process.env.PRICE_SOL ?? 0.0001)
 const RPC = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com'
+// Devnet-only guard (standalone — mirrors @pay/agent-runtime's solanaConnection).
+if (process.env.ALLOW_MAINNET !== '1' && /mainnet/i.test(RPC)) {
+  console.error(`Refusing mainnet RPC "${RPC}" — this kit is devnet-only. Set ALLOW_MAINNET=1 to override (never with a funded key).`)
+  process.exit(1)
+}
 
 if (!RECIPIENT) {
   console.error('SELLER_WALLET (or WALLET) must be set to a devnet pubkey')

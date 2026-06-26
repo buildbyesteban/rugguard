@@ -1,10 +1,10 @@
 # @pay/agent-runtime
 
-The TypeScript runtime every agent in this kit is built on. It owns the agent loop, lifecycle,
-messaging, shared state, and the CoralOS (MCP) connection — so you only write *behavior*.
+The CoralOS MCP client every agent in this kit is built on. It connects an agent to a CoralOS
+session and hands you the four messaging verbs — so you only write *behavior*.
 
 ```ts
-import { startCoralAgent, BaseStrategy, AgentManager } from '@pay/agent-runtime'
+import { startCoralAgent } from '@pay/agent-runtime'
 ```
 
 The `coral-agents/` agents depend on it via a local `file:` link. Build its `dist` before dependents:
@@ -17,17 +17,16 @@ The `coral-agents/` agents depend on it via a local `file:` link. Build its `dis
 | `startCoralAgent(config, run)` | the entrypoint — connects an agent to CoralOS and hands you a `ctx` |
 | `ctx` | `waitForMention`, `waitForMentionInThread`, `waitForAgent`, `reply`, `send`, `createThread` |
 | `CoralMcpAgent` | the MCP client underneath (StreamableHTTP transport, tool discovery) |
-| `BaseStrategy` / `Strategy` | behavior interface: `run(state, signal)` + `handleMessage(text, state)` |
-| `AgentManager` | runs many agents in one process; owns the shared `bus` + `state` |
-| `MessageBus` | broadcast / direct messaging between agents |
-| `SharedState` | a versioned key-value blackboard all agents read/write |
-| `WorkflowEngine` | a DAG of steps for multi-step jobs |
-| `strategies/*` | templates: `Idle`, `RpcPoll`, `Weather`, `Transfer`, `Payment`, `HeliusMonitor` |
+| `solanaConnection(url?)` / `assertDevnet` | devnet-guarded `Connection` for payment code — throws on a mainnet RPC unless `ALLOW_MAINNET=1` |
 
-## The two ways to use it
+`coral_mcp.ts` (the client), `coral_mcp_server.ts` (`startCoralAgent`), and `solana.ts` (the devnet
+guard). Payments settle agent-side in Solana code — the runtime never holds a keypair, it just keeps
+your payment code off mainnet.
 
-**1. A CoralOS agent** (what `coral-agents/` does) — you write the loop; the runtime handles spawning,
-connecting, and routing:
+## How to use it
+
+You write the loop; the runtime handles spawning, connecting, and routing:
+
 ```ts
 await startCoralAgent({ agentName: 'seller-agent' }, async (ctx) => {
   while (true) {
@@ -36,20 +35,10 @@ await startCoralAgent({ agentName: 'seller-agent' }, async (ctx) => {
   }
 })
 ```
+
 `ctx.waitForMentionInThread(threadId)` is the same but scoped to one thread — for agents juggling
 several at once (e.g. the broker shopping multiple sellers; see `docs/SWARM.md`).
-
-**2. A reusable Strategy** — for the `AgentManager`/in-process side, or to share logic:
-```ts
-class RiskStrategy extends BaseStrategy {
-  readonly name = 'risk'
-  async run(state, signal) { while (!signal.aborted) { /* poll/act — respect the AbortSignal */ } }
-  async handleMessage(text) { return assess(text) }
-}
-```
-
-`AgentManager` runs several in one process and gives them a shared `bus` (broadcast/direct) and
-`state` (a versioned blackboard); `WorkflowEngine` orders multi-step jobs by dependency.
+`ctx.waitForAgent(name)` blocks until a specific agent comes online before you send it work.
 
 ## Extend it
 
@@ -57,11 +46,10 @@ class RiskStrategy extends BaseStrategy {
 |---|---|
 | new data to sell | edit `deliverService` in `coral-agents/seller-agent` |
 | new autonomous behavior | `startCoralAgent({ agentName }, run)` — a new agent |
-| many agents in one process | `AgentManager` + `bus` + `state` |
-| reusable logic | subclass `BaseStrategy` |
+| a new front door | drive the session from outside (see `examples/agent-economy/bridge`) |
 
-> You build *on* the runtime — you rarely edit it. The job of `startCoralAgent` / `BaseStrategy` is to
-> make your behavior "just work" against CoralOS and Solana.
+> You build *on* the runtime — you rarely edit it. The job of `startCoralAgent` is to make your
+> behavior "just work" against CoralOS, leaving payment to your Solana code.
 
-For exact signatures, read the source in `src/` (each module is small and commented) — `coral_mcp.ts`
-(the MCP client), `strategy.ts`, `manager.ts`, `message_bus.ts`, `shared_state.ts`, `workflow.ts`.
+For exact signatures, read `src/coral_mcp.ts` (the MCP client) and `src/coral_mcp_server.ts`
+(`startCoralAgent` + the `ctx` it builds) — both small and commented.

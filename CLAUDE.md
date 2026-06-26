@@ -56,16 +56,15 @@ cd examples/agent-economy/bridge && npm install && npm run smoke               #
 
 ### packages/agent-runtime
 
-The central TypeScript library. Key modules:
+The CoralOS MCP client every agent is built on. Two modules:
 
-- **`agent.ts` / `AgentState`** — agent holds a pluggable `Strategy` and action log; `setRpc` has a mainnet guard
-- **`manager.ts` / `AgentManager`** — creates, stores, drives agents; owns `MessageBus`, `SharedState`, `WorkflowEngine`
-- **`strategy.ts` / `BaseStrategy`** — `async run(state, signal)` + `handleMessage(text, state)` interface
-- **`message_bus.ts`** — broadcast/direct messaging between agents
-- **`shared_state.ts`** — versioned key-value store accessible to all agents
-- **`workflow.ts`** — DAG of `WorkflowStep`s with dependency ordering
-- **`coral_mcp.ts` / `coral_mcp_server.ts`** — MCP client + `startCoralAgent` entrypoint for joining CoralOS sessions
-- **`strategies/`** — `HeliusMonitorStrategy`, `TransferStrategy`, `PaymentStrategy`, `WeatherStrategy`, `RpcPollStrategy`, `IdleStrategy`
+- **`coral_mcp.ts` / `CoralMcpAgent`** — the MCP client: StreamableHTTP transport, dynamic tool
+  discovery, and the four verbs (`waitForMention`, `sendMessage`, `createThread`, `waitForAgent`).
+  `parseMention` normalizes CoralOS's response shapes (tested in `coral_mcp.test.ts`).
+- **`coral_mcp_server.ts` / `startCoralAgent`** — the entrypoint a Docker agent calls to join a
+  CoralOS session; reads the injected `CORAL_CONNECTION_URL` and hands your `run` a `ctx`.
+
+The runtime is purely coordination — payments settle agent-side in each agent's Solana code.
 
 ### coral-agents (what coral-server launches)
 
@@ -83,8 +82,7 @@ Reads replies from the session's extended state (the puppet API is send-only).
 
 ## Key Constraints
 
-- **`Strategy.run()` must respect the `AbortSignal`** — check `signal.aborted` in polling loops and return cleanly.
-- **`AgentManager` is not thread-safe across Node.js workers** — keep it in the main process; use message passing if you need workers.
+- **The CoralOS run loop should respect its `AbortSignal`** — `CoralMcpAgent.runLoop(handler, signal)` checks `signal.aborted`; `startCoralAgent` wires SIGINT/SIGTERM to a clean disconnect.
 - **coral-server launches agents via the Docker socket** — build the agent images before `docker compose up`.
-- **Devnet only** — all Solana operations target devnet; `setRpc` rejects mainnet unless `ALLOW_MAINNET=1`. Never use a funded mainnet keypair in `.env`.
+- **Devnet only** — agent payment code builds its `Connection` via `solanaConnection()` (`@pay/agent-runtime`), which throws on a mainnet RPC unless `ALLOW_MAINNET=1`; it defaults to `https://api.devnet.solana.com`. Never put a funded mainnet keypair in `.env`.
 - **The `coral-agents` / `examples` packages depend on `@pay/agent-runtime` via `file:` deps** — run `npm run build` in `packages/agent-runtime` first so the dist exists.

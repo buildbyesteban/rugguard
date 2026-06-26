@@ -1,9 +1,9 @@
-import { Connection, PublicKey, Keypair } from '@solana/web3.js'
+import { PublicKey, Keypair } from '@solana/web3.js'
 import { encodeURL, validateTransfer } from '@solana/pay'
 import BigNumber from 'bignumber.js'
+import { solanaConnection } from '@pay/agent-runtime'
 
-const connection = () =>
-  new Connection(process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com')
+const connection = () => solanaConnection()
 
 /**
  * The broker is a SELLER to the buyer: it charges `amountSol` (its cost + markup) to its own wallet
