@@ -13,10 +13,13 @@ export function CheckoutTab() {
   const { connected } = useWallet()
   const buy = useCheckout()
   const [service, setService] = useState('jupiter')
+  const [prompt, setPrompt] = useState('Write a haiku about Solana.')
   const [steps, setSteps] = useState<string[]>([])
   const [result, setResult] = useState('')
   const [sig, setSig] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const needsPrompt = service === 'inference'
 
   async function pay() {
     setBusy(true)
@@ -24,7 +27,7 @@ export function CheckoutTab() {
     setResult('')
     setSig('')
     try {
-      const r = await buy(service, (s) => setSteps((p) => [...p, s]))
+      const r = await buy(service, needsPrompt ? prompt : '', (s) => setSteps((p) => [...p, s]))
       setResult(r.data)
       setSig(r.sig)
     } catch (e) {
@@ -56,7 +59,17 @@ export function CheckoutTab() {
         ))}
       </div>
 
-      <button className="primary" onClick={pay} disabled={!connected || busy}>
+      {needsPrompt && (
+        <textarea
+          className="prompt"
+          rows={3}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Ask the AI anything…"
+        />
+      )}
+
+      <button className="primary" onClick={pay} disabled={!connected || busy || (needsPrompt && !prompt.trim())}>
         {busy ? 'Working…' : connected ? 'Buy with Phantom' : 'Connect a wallet first'}
       </button>
 

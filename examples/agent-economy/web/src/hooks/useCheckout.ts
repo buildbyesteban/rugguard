@@ -9,12 +9,13 @@ export function useCheckout() {
 
   return async function buy(
     service: string,
+    prompt: string,
     onStep: (s: string) => void,
   ): Promise<Delivered & { sig: string }> {
     if (!publicKey) throw new Error('Connect your wallet first')
 
     onStep('Asking the seller for a price…')
-    const order = await startOrder(service)
+    const order = await startOrder(service, prompt)
 
     // Build the transfer and write the reference key — binds this payment to THIS order.
     const ix = SystemProgram.transfer({

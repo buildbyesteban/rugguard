@@ -129,6 +129,9 @@ app.get('/health', (_req, res) => res.json({ ok: true, seller: SELLER_WALLET, se
 app.post('/order', async (req, res) => {
   try {
     const service = String(req.body?.service ?? SERVICE)
+    const prompt = String(req.body?.prompt ?? '').trim()
+    // The seller routes on the first token; append the prompt for services that use it (e.g. inference).
+    const query = prompt ? `${service} ${prompt}` : service
     const sid = await ensureSession()
 
     const tres = await fetch(`${BASE}/api/v1/puppet/${NS}/${sid}/user-proxy/thread`, {
@@ -138,7 +141,7 @@ app.post('/order', async (req, res) => {
     if (!tres.ok) throw new Error(`thread create failed: ${tres.status} ${await tres.text()}`)
     const threadId = (await tres.json() as { thread: { id: string } }).thread.id
 
-    await inject(sid, threadId, `request ${service}`)
+    await inject(sid, threadId, `request ${query}`)
     const text = await pollThread(sid, threadId, 'PAYMENT_REQUIRED')
 
     // The reference is a base58 pubkey that binds this payment to this order (the field appears

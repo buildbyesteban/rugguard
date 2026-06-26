@@ -6,21 +6,31 @@
 //
 // Default: Jupiter DEX swap quote (SOL → USDC) — no API key needed
 
+const KNOWN_SERVICES = new Set(['jupiter', 'coingecko', 'news', 'inference', 'claude'])
+
 export async function deliverService(request: string): Promise<string> {
-  const service = process.env.SERVICE ?? 'jupiter'
+  // The request may NAME a service as its first token — that's how the human checkout's
+  // dropdown (and any buyer that picks a service) selects it per-order, e.g.
+  //   "inference write a haiku about Solana"  → service=inference, prompt="write a haiku about Solana"
+  //   "coingecko eth"                         → service=coingecko, payload="eth"
+  // If the first token isn't a known service, fall back to the SERVICE env (single-service mode).
+  const [first, ...rest] = request.trim().split(/\s+/)
+  const named = KNOWN_SERVICES.has((first ?? '').toLowerCase())
+  const service = named ? first.toLowerCase() : (process.env.SERVICE ?? 'jupiter')
+  const payload = named ? rest.join(' ') : request
 
   switch (service) {
     case 'jupiter':
-      return jupiterSwapQuote(request)
+      return jupiterSwapQuote(payload)
     case 'coingecko':
-      return coingeckoPrice(request)
+      return coingeckoPrice(payload)
     case 'news':
-      return newsHeadlines(request)
+      return newsHeadlines(payload)
     case 'inference':
     case 'claude':
-      return claudeInference(request)
+      return claudeInference(payload)
     default:
-      return jupiterSwapQuote(request)
+      return jupiterSwapQuote(payload)
   }
 }
 

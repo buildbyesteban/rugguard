@@ -27,7 +27,8 @@ const POST = (url: string, body?: unknown) =>
     body: body ? JSON.stringify(body) : undefined,
   }).then(json)
 
-export const startOrder = (service: string): Promise<Order> => POST('/order', { service })
+export const startOrder = (service: string, prompt?: string): Promise<Order> =>
+  POST('/order', { service, prompt })
 
 export const submitPaid = (reference: string, sig: string): Promise<Delivered> =>
   POST(`/order/${reference}/paid`, { sig })
