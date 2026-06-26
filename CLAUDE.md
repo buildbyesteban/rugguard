@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A TypeScript-first starter kit for a Solana **agent economy**: a seller agent sells a service for SOL;
-buyers — another agent (autonomous) or a human (Phantom checkout) — request it over **CoralOS** (MCP),
-pay on-chain, and the seller verifies the payment and delivers. One track, two front doors. The core
-stack is Node.js/TypeScript throughout (plus one ~40-line Python puppet) — no Rust. There is **one
-optional Rust add-on**: an Anchor escrow under `examples/agent-economy/escrow/` (the trustless-settlement
-upgrade), clearly marked as opt-in and not needed by the core track.
+A TypeScript starter kit for a Solana **agent economy** — specifically an **open marketplace**: LLM
+seller agents compete for a buyer's business over **CoralOS** (MCP), and the winner is settled
+**trustlessly through a Solana escrow contract** (deposit → deliver → release / refund after a
+deadline). The stack is pure TypeScript end-to-end; the **only Rust is the escrow Anchor program**,
+which is the **settlement spine** (not optional). A forkable, e2e-tested React dashboard renders the
+live market. The headline (and only) example is `examples/marketplace/`.
 
 ## Repo Layout
 

@@ -6,9 +6,10 @@ Contributions are welcome. The `main` branch is the integration branch — targe
 
 | Directory | Language | Typical changes |
 |-----------|----------|-----------------|
-| `packages/agent-runtime/` | TypeScript | New strategies, Solana Pay logic, messaging, workflows |
-| `coral-agents/` | TypeScript (+ one Python puppet) | The seller/buyer/echo agents; fork `seller-agent/src/service.ts` |
-| `examples/agent-economy/` | TypeScript | The autonomous starter, the human bridge + checkout UI, the quickstart |
+| `packages/agent-runtime/` | TypeScript | The three-pillar runtime: CoralOS client, Solana Pay, the LLM shim, the market protocol |
+| `coral-agents/` | TypeScript | The buyer/seller agents + seller personas; fork `seller-agent/src/service.ts` |
+| `examples/marketplace/` | TypeScript | The market launcher (`start.ts`) + the React dashboard (`web/`) + feed server |
+| `examples/agent-economy/escrow/` | Rust (Anchor) | The escrow settlement contract |
 
 ## Prerequisites
 
@@ -21,9 +22,12 @@ Contributions are welcome. The `main` branch is the integration branch — targe
 # build the runtime first — coral-agents/examples depend on its dist via file: deps
 cd packages/agent-runtime && npm install && npm run build && npm run typecheck && npm test
 
-# typecheck + test the economy
+# typecheck + test the agents
 cd coral-agents/seller-agent && npm install && npm run typecheck && npm test
-cd examples/agent-economy/bridge && npm install && npm run typecheck
+cd coral-agents/buyer-agent && npm install && npm run typecheck && npm test
+
+# the dashboard (runs offline against fixtures — no devnet)
+cd examples/marketplace/web && npm install && npm test && npm run e2e
 ```
 
 ## PR Workflow

@@ -19,7 +19,7 @@ Adds slash commands for CoralOS sessions:
 | Command | What it does |
 |---------|-------------|
 | `/coral-setup` | start, inspect, configure coral-server (provides `CORAL_CONNECTION_URL`) |
-| `/coral-session-control` | drive sessions/threads via the same REST + Puppet API the bridge uses |
+| `/coral-session-control` | drive sessions/threads via coral's session REST API (the same one the marketplace launcher + dashboard use) |
 | `/coral-runtime-reference` | the API/schema reference behind `packages/agent-runtime/src/coral_mcp.ts` |
 | `/coralize-your-agent` | wire a new agent into the economy (fork point: `coral-agents/`) |
 
