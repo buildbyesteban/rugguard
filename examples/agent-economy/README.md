@@ -1,8 +1,8 @@
 # Agent Economy on CoralOS
 
 > A seller agent lists a service; buyers — **agent or human** — request it over CoralOS, pay in SOL
-> on-chain, and the seller verifies the payment and delivers. **One protocol, one seller, two front
-> doors.**
+> on-chain, and the seller verifies the payment and delivers. **One protocol, one seller, three front
+> doors** (autonomous · human checkout · swarm) — each its own tab in the demo UI.
 
 Every payment is a real on-chain **devnet** transaction. CoralOS (coral-server) is the coordination
 fabric — a pure MCP message bus. Payments are settled agent-side in SOL, so coral-server runs
@@ -68,19 +68,33 @@ docker logs -f seller-agent    # "payment verified — delivering service"
 
 Each cycle is a real devnet tx — paste the sig into [explorer](https://explorer.solana.com/?cluster=devnet).
 
-## Front door 2 — human checkout (Phantom)
+## Front door 2 — human checkout (wallet)
 
 ```sh
-docker compose up -d bridge            # the human → user-proxy bridge on :3010
-# open http://localhost:3010  (Phantom on Devnet)
+docker compose up -d coral bridge      # bridge builds + serves the React UI on :3010
+# open http://localhost:3010  (Phantom or Solflare on Devnet) → Checkout tab
 ```
 
-Pick a service, click **Request & Pay**. The bridge injects your order into a CoralOS session *as*
-`user-proxy`, the seller replies with a Solana Pay URL, Phantom signs the transfer, the seller
-verifies on-chain and delivers — the same seller the autonomous buyer uses.
+Connect a wallet, pick a service (Jupiter / CoinGecko / news / AI completion), click **Buy**. The
+bridge injects your order into a CoralOS session *as* `user-proxy`, the seller replies with a Solana
+Pay URL, your wallet signs the transfer, the seller verifies on-chain and delivers — the same seller
+the autonomous buyer uses.
 
-> Headless check (no browser): `cd bridge && npm install && npm run smoke` — pays from the funded
-> keypair in place of the Phantom click and asserts delivery.
+> The UI is the React app in [`web/`](web/), baked into the bridge image. For live UI edits run
+> `just ui` (Vite hot-reload on :5173, proxied to the bridge). Headless check (no browser):
+> `cd bridge && npm install && npm run smoke`.
+
+## Front door 3 — swarm (broker + multiple sellers)
+
+```sh
+node ../../scripts/provision-swarm.js  # creates + funds a broker wallet and two seller wallets
+# open http://localhost:3010 → Swarm tab → Run the swarm demo
+```
+
+A **broker** agent shops two priced sellers (`seller-cheap` / `seller-premium`), buys from the cheaper
+on-chain, and resells to the buyer at a markup — **two on-chain settlements per request**, money
+flowing through a graph of agents. The broker reuses the kit's payment/wallet code; the two sellers
+are thin manifests reusing the seller image. See [`../../docs/SWARM.md`](../../docs/SWARM.md).
 
 ## No Docker? — the quickstart
 
@@ -106,8 +120,11 @@ coral-agents/seller-agent/src/service.ts → deliverService(request)
 coral-agents/buyer-agent/src/{goal.ts, llm_buyer.ts}
     what the autonomous buyer wants + how it decides to pay (code-enforced budget)
 
+coral-agents/broker/src/index.ts → the swarm's pick logic (which sellers, how it chooses, the markup)
+
 config/coral.toml  → register a new agent (drop it in coral-agents/, add to localAgents)
-bridge/server.ts   → a new human/front-door flow
+bridge/server.ts   → a new human/front-door flow (a new bridge endpoint)
+web/src/           → the React UI — add a service, a tab, a widget (see docs/EXPANDING_FRONTEND.md)
 ```
 
 ## How it's wired
@@ -116,9 +133,10 @@ bridge/server.ts   → a new human/front-door flow
 |---|---|
 | `config/coral.toml` | wallet-free MCP config; registers the agents from `coral-agents/` |
 | `autonomous/start.ts` | creates the `[buyer, seller]` session (with typed agent options) |
-| `bridge/server.ts` | human → `user-proxy` puppet bridge; reads replies from session state; self-serves the Phantom UI |
-| `bridge/web/index.html` | framework-free Phantom checkout |
+| `bridge/server.ts` | the hub: serves the React UI + the API (`/order`, `/autonomous/*`, `/swarm/*`); injects human orders as `user-proxy`, reads replies from session state |
+| `web/` | the React demo UI — three tabs (Autonomous · Checkout · Swarm), built into the bridge image |
 | `quickstart/` | no-Docker bare-metal 402 version |
+| `escrow/` | optional Anchor program for trustless settlement |
 | `../../docker-compose.yml` | coral-server + bridge (run from repo root) |
 
 Devnet only. Never put a funded mainnet keypair in `.env`.

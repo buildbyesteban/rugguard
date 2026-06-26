@@ -34,7 +34,7 @@ Browser → POST /order/:reference/paid { sig }       → seller verifies on-cha
 ## Files
 
 ```
-server.ts       puppet bridge (inject as user-proxy) + order/autonomous endpoints; serves ./web
+server.ts       puppet bridge (inject as user-proxy) + order / autonomous / swarm endpoints; serves ./web
 web/            the built React UI (copied in by bridge/Dockerfile; source lives in ../web)
 smoke.ts        headless test — pays from the .env keypair in place of the Phantom click
 ```
