@@ -1,9 +1,10 @@
-# Escrow — the optional smart-contract upgrade
+# Escrow — the settlement spine
 
-> **This is an opt-in add-on, not part of the core track.** The base agent economy is TypeScript-only
-> and settles with plain SOL transfers + Solana Pay verification — no custom on-chain program. This
-> directory is the **smart-contract** version for people who want **trustless settlement**, and it
-> introduces Rust (Anchor). Use it only if you need what it buys.
+> **This is the settlement spine of the marketplace — not optional.** Every awarded order settles
+> through this program: the buyer deposits, the seller delivers, the buyer releases (or refunds after a
+> deadline). It is the **only Rust in the kit**; everything else is TypeScript. A legacy 1:1 *pay-first*
+> path (plain SOL transfer + Solana Pay verification) is still kept as an on-ramp, but the open market
+> of competing strangers runs on escrow.
 >
 > **Status:** ✅ built, **deployed to devnet**, and tested. Program ID
 > [`R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet`](https://explorer.solana.com/address/R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet?cluster=devnet).
@@ -14,10 +15,10 @@
 
 ## Why escrow
 
-The base loop is **pay-first**: the buyer pays, *then* trusts the seller to deliver. If the seller
-takes the payment and delivers nothing, the buyer is out the money (the security review calls this the
-"trust asymmetry"). That's fine for first-party / trusted agents; it does **not** scale to an open
-marketplace of strangers.
+The kit also keeps a legacy **pay-first** path: the buyer pays, *then* trusts the seller to deliver. If
+the seller takes the payment and delivers nothing, the buyer is out the money (the security review calls
+this the "trust asymmetry"). That's fine for first-party / trusted agents; it does **not** scale to an
+open marketplace of strangers — which is why the market settles through escrow instead.
 
 Escrow flips it to **conditional settlement**:
 
@@ -136,9 +137,10 @@ build them (Anchor scaffolding, LiteSVM tests, Codama client generation, the sec
 
 ## The honest trade-off
 
-- **Gain:** trustless settlement — the headline thing a real agent marketplace needs.
-- **Cost:** it's **Rust**, so it breaks the kit's "TypeScript end-to-end" simplicity, and it adds a
-  build/deploy toolchain. That's why it lives here as an opt-in, not in the core track.
-- **Middle ground:** if you only want **price stability** (not trustlessness), you don't need a
-  program at all — accept **USDC** via SPL token transfers in the existing TS flow. Escrow is
-  specifically about *trust*, not tokens.
+- **Gain:** trustless settlement — the headline thing a real agent marketplace needs, which is why
+  it's the spine and not an add-on.
+- **Cost:** it's **Rust**, the one place the kit leaves "TypeScript end-to-end", and it adds a
+  build/deploy toolchain — the price of trustless settlement.
+- **Middle ground:** if you only want **price stability** (not trustlessness), escrow is overkill —
+  accept **USDC** via SPL token transfers in the TS flow. Escrow is specifically about *trust*, not
+  tokens.

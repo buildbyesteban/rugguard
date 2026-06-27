@@ -17,30 +17,53 @@ Each one is load-bearing — pull it and the demo collapses into something lesse
 | **CoralOS** | the shared market thread; dynamic discovery; multi-party | point-to-point pipes |
 | **Solana (Pay + escrow)** | a `reference` binds the deal; the escrow contract releases funds only on delivery, refunds after a deadline | trust-me play money |
 
-The goods traded are **Solana data services** (Jupiter, CoinGecko, Helius, on-chain reads, LLM
-analysis) — the seller's `deliverService()` is the one fork point.
+The goods traded are **real services** the seller fetches on demand — Jupiter swap quotes, CoinGecko
+prices, crypto news headlines, and Claude inference — and the seller's `deliverService()` is the one
+fork point where you add your own.
 
-## What you need
+## Prerequisites
 
-Everything is devnet and free. Keys live in a local `.env` (none in the repo).
+Everything runs on **devnet** — free play money, real on-chain settlement. Keys live in a local `.env` (none in the repo).
 
-| What | For | How |
-|------|-----|-----|
-| **Devnet SOL** (2 wallets) | escrow deposits + receiving | `node scripts/setup.js` generates them → `.env`; **fund both** at [faucet.solana.com](https://faucet.solana.com) (GitHub sign-in — the only way) |
-| **An LLM key** | the agents' bidding + selection | `ANTHROPIC_API_KEY` (default), **or** `LLM_PROVIDER=openai` + `OPENAI_API_KEY` to run the whole market on OpenAI |
-| **Docker Desktop** | coral-server launches the agents | [docker.com](https://www.docker.com/products/docker-desktop/) |
+| Need | Why | Get it |
+|------|-----|--------|
+| **Node 20+** | the runtime + agents | [nodejs.org](https://nodejs.org) |
+| **Docker Desktop** (running) | coral-server launches the agents as containers | [docker.com](https://www.docker.com/products/docker-desktop/) |
+| **An LLM key** | the agents' bidding + best-value selection | `ANTHROPIC_API_KEY` (default) — or `LLM_PROVIDER=openai` + `OPENAI_API_KEY` to flip the whole market |
+| **`just`** *(recommended)* | runs the whole setup in one command | `winget install Casey.Just` · `brew install just` · `cargo install just` — [other installs](https://github.com/casey/just#installation) |
+
+> **Devnet SOL is generated and funded in step 1 below — you don't need any beforehand.**
 
 ## Quick start
 
+Two paths, same result — **Path A (`just`) is the shortcut; Path B is the identical steps by hand.**
+
+### Path A — with `just` (recommended)
+
 ```sh
-node scripts/setup.js                                  # generate wallets → .env (then fund both)
-bash build-agents.sh                                   # build seller + buyer images
-docker compose up -d coral                             # CoralOS (MCP coordinator)
-cd examples/marketplace && npm install && npm start    # launch the market session
-docker logs -f buyer-agent                             # watch it run
+just dev    # script deps → generate wallets → build images → start coral → open the dashboard
 ```
 
-With [`just`](https://github.com/casey/just): `just dev` (wallets + build + coral) then `just market`.
+`just dev` prints **two wallet addresses**. **Fund both** at [faucet.solana.com](https://faucet.solana.com)
+(GitHub sign-in — it's the only devnet faucet that works; CLI/RPC airdrops are gated). Then **either**:
+
+- **click "Start a market"** in the dashboard it opened, **or**
+- run **`just market`** in a second terminal to launch the session from the CLI.
+
+Run `just` on its own to list every recipe — `just doctor` (readiness check), `just logs`, `just down` (stop everything).
+
+### Path B — by hand (no `just`)
+
+```sh
+npm install --prefix scripts                           # script deps (web3.js, bs58) — required before setup
+node scripts/setup.js                                  # generate 2 wallets → .env   ← then FUND BOTH at the faucet
+bash build-agents.sh                                   # build seller + buyer images
+docker compose up -d coral                             # start coral-server (MCP coordinator)
+cd examples/marketplace && npm install && npm start    # launch the market session
+docker logs -f buyer-agent                             # watch WANT → AWARD → DEPOSITED → RELEASED
+```
+
+> Stuck? `node scripts/doctor.js` checks Docker, Node, wallet funding, and that coral is up. More in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## What you'll see
 
@@ -57,6 +80,72 @@ seller-cheap   DELIVERED round=1 {"coin":"solana","usd":…}
 
 Set `TRACE=1` in `.env` to see every `coral_*` call and on-chain Explorer link (deposit, release, the
 escrow PDA). Flip `LLM_PROVIDER=openai` to run the same market on the sponsor's stack — no code change.
+
+## Under the hood — the three layers
+
+Three independent layers, all in [`packages/agent-runtime`](packages/agent-runtime) so every agent
+imports them and writes only behaviour. They're wired together by **one shared key** — see the last
+section.
+
+### 1. CoralOS — the coordination layer (MCP)
+
+[`coral_mcp.ts`](packages/agent-runtime/src/coral_mcp.ts) speaks the Model Context Protocol over a
+StreamableHTTP transport: it connects to coral-server, discovers its tools, and exposes four primitives:
+
+| Primitive | Does |
+|-----------|------|
+| `waitForMention()` | block until an agent @-mentions you in a thread |
+| `waitForAgent(name)` | block until a counterparty comes online (replaces a fixed sleep) |
+| `createThread(name, participants)` | open a shared room — the buyer opens one `market` thread for all sellers |
+| `send` / `reply` | post into a thread, optionally @-mentioning agents |
+
+The entire market — `WANT → BID → AWARD → ESCROW_REQUIRED → DEPOSITED → DELIVERED` — is just these
+messages over a shared thread. [`startCoralAgent`](packages/agent-runtime/src/coral_mcp_server.ts) wires
+the run loop to an `AbortSignal` for clean SIGINT/SIGTERM shutdown. **coral-server never holds a
+keypair** — it coordinates the deal; it never settles it.
+
+### 2. Solana Pay — the binding layer
+
+[`solana_pay.ts`](packages/agent-runtime/src/solana_pay.ts) is four functions:
+
+| Function | Does |
+|----------|------|
+| `generatePaymentUrl()` | builds a `solana:` transfer URL (`@solana/pay`'s `encodeURL`) tagged with a fresh **`reference`** |
+| `verifyPayment()` | confirms on-chain (`validateTransfer`) that a sig paid the right amount to the right recipient **carrying that reference** |
+| `signTransfer()` | signs + sends a budget-checked SOL transfer |
+| `loadKeypairB58()` | loads a keypair from an env var (pure-BigInt, no `bs58` dep) |
+
+The **`reference`** is a single-use public key attached to a payment as a read-only account. It makes a
+payment proof **non-transferable** — bound to exactly one order — and it's the same key that seeds the
+escrow PDA. Every connection runs through `solanaConnection()`, so the **devnet guard** (throws on a
+mainnet RPC unless `ALLOW_MAINNET=1`) applies to every payment.
+
+### 3. Anchor escrow — the settlement layer
+
+The only Rust in the kit: a per-order escrow program
+([`lib.rs`](examples/agent-economy/escrow/programs/escrow/src/lib.rs)) with three instructions:
+
+| Instruction | Does |
+|-------------|------|
+| `initialize(amount, reference, deadline)` | buyer deposits SOL into a PDA seeded by `(buyer, reference)` |
+| `release()` | buyer confirms delivery → pays the seller, closes the account, rent back to buyer |
+| `refund()` | buyer reclaims the deposit after the deadline if the seller never delivered |
+
+It's written to the Solana security checklist: `init` (never `init_if_needed`), `has_one` on **both**
+buyer and seller, `close = buyer` (rent returned, no account revival), and checked math on every lamport
+move. Settlement is **agent-side**: the buyer deposits, the seller verifies the PDA is funded before
+delivering, the buyer releases on delivery (or refunds after the deadline).
+
+### How they connect — the `reference`
+
+One key threads all three. A fresh `reference` pubkey is minted per order, then it:
+
+1. **binds** the Solana Pay payment (a non-transferable proof),
+2. **seeds** the escrow PDA — `seeds = [b"escrow", buyer, reference]`, and
+3. **travels** through the CoralOS messages — `ESCROW_REQUIRED reference=… → DEPOSITED reference=…`.
+
+That shared key is what makes this **one system, not three adjacent demos**: CoralOS carries the deal,
+Solana Pay binds it, the escrow settles it — all pointing at the same `reference`.
 
 ## Repo layout
 

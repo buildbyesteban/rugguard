@@ -1,9 +1,10 @@
-//! Agent-economy escrow — trustless settlement for the pay-per-call loop.
+//! Agent-economy escrow — the trustless **settlement spine** of the marketplace.
 //!
-//! The base track is *pay-first*: the buyer pays, then trusts the seller to deliver. This program
-//! removes that trust. A buyer **deposits** SOL into a per-order escrow PDA; the seller is paid only
-//! when the buyer **releases** (confirms delivery), and the buyer can **refund** after a deadline if
-//! the seller never delivered.
+//! LLM seller agents compete for a buyer's business over CoralOS (MCP); the winning bid settles
+//! **here, not on trust**. A buyer **deposits** SOL into a per-order escrow PDA; the seller is paid
+//! only when the buyer **releases** (confirms delivery), and the buyer can **refund** after a
+//! deadline if the seller never delivered. This is the only Rust in the kit, and it is **not
+//! optional** — every awarded order in the market settles through this program.
 //!
 //! Security posture (from the solana-dev skill checklist):
 //! - `init` (never `init_if_needed`) — no reinitialization attacks.
@@ -12,8 +13,9 @@
 //! - `close = buyer` — secure closure returns rent and prevents account revival.
 //! - Checked math on every lamport move.
 //!
-//! This is the OPTIONAL smart-contract upgrade. The core track is TypeScript-only and does not need
-//! it — see ../README.md.
+//! You don't fork this — you **call** it. The student fork point is the service being sold
+//! (`coral-agents/seller-agent/src/service.ts`); agents deposit / release / refund through this
+//! program via its TS client. See ../README.md.
 
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
