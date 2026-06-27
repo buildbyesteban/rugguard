@@ -167,17 +167,39 @@ async function txlineService(request: string): Promise<string> {
     case 'odds':
       return JSON.stringify({ service: 'txline-odds', fixtureId, odds: await txlineGet(`/api/odds/snapshot/${fixtureId}`) })
     case 'edge': {
-      const odds = await txlineGet(`/api/odds/snapshot/${fixtureId}`)
+      const [odds, fixtures] = await Promise.all([
+        txlineGet(`/api/odds/snapshot/${fixtureId}`),
+        txlineGet('/api/fixtures/snapshot'),
+      ])
       // Pull the 1X2 de-margined market so the buyer/UI gets the odds board, not just the call.
       const m = Array.isArray(odds) ? (odds as Array<Record<string, unknown>>).find((x) => String(x.SuperOddsType ?? '').includes('1X2')) : undefined
       const market = m ? { names: m.PriceNames, pct: m.Pct } : undefined
+      // Resolve team names from the fixtures snapshot so each round shows a real matchup.
+      const fx = Array.isArray(fixtures) ? (fixtures as Array<Record<string, unknown>>).find((f) => String(f.FixtureId) === String(fixtureId)) : undefined
+      const teams = fx ? { home: fx.Participant1, away: fx.Participant2, competition: fx.Competition } : undefined
+      const matchup = teams ? `${teams.home} v ${teams.away}` : `fixture ${fixtureId}`
       const raw = await claudeInference(
-        'You are a football trading analyst. From these de-margined World Cup odds, return JSON ' +
-          `{call, confidence} — a one-line value call and a 0-1 confidence. Odds: ${JSON.stringify(odds).slice(0, 1500)}`,
+        `You are a football trading analyst. For ${matchup}, from these de-margined World Cup odds return ` +
+          `JSON {call, confidence} — a one-line value call and a 0-1 confidence. Odds: ${JSON.stringify(odds).slice(0, 1500)}`,
       )
+      // Prefer the LLM value call; if the model is unavailable (no key/credits), fall back to a
+      // deterministic odds-based pick so the demo always renders a clean edge.
+      const llm = ((): Record<string, unknown> | undefined => { try { return JSON.parse(raw) } catch { return undefined } })()
+      const completion = typeof llm?.completion === 'string' ? llm.completion.trim() : ''
       let analysis: unknown
-      try { analysis = JSON.parse(raw).completion ?? raw } catch { analysis = raw }
-      return JSON.stringify({ service: 'txline-edge', fixtureId, market, analysis })
+      if (completion) {
+        try { analysis = JSON.parse(completion) } catch { analysis = { call: completion } }
+      } else {
+        const names = (market?.names ?? []) as string[]
+        const pcts = (market?.pct ?? []) as string[]
+        let bi = -1, bp = -1
+        names.forEach((_, i) => { const p = Number(pcts[i]); if (Number.isFinite(p) && p > bp) { bp = p; bi = i } })
+        const label = bi < 0 ? '—' : names[bi] === 'part1' ? (teams?.home ?? 'Home') : names[bi] === 'part2' ? (teams?.away ?? 'Away') : 'Draw'
+        analysis = bi >= 0
+          ? { call: `Odds favour ${label} (${bp.toFixed(0)}%)`, confidence: Number((bp / 100).toFixed(2)), note: 'deterministic — add Anthropic credits for an LLM call' }
+          : { call: 'odds unavailable' }
+      }
+      return JSON.stringify({ service: 'txline-edge', fixtureId, teams, market, analysis })
     }
     case 'fixtures':
     default: {
