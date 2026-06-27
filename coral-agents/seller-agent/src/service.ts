@@ -6,7 +6,7 @@
 //
 // Default: Jupiter DEX swap quote (SOL → USDC) — no API key needed
 
-const KNOWN_SERVICES = new Set(['jupiter', 'coingecko', 'news', 'inference', 'claude'])
+const KNOWN_SERVICES = new Set(['jupiter', 'coingecko', 'news', 'inference', 'claude', 'txline'])
 
 export async function deliverService(request: string): Promise<string> {
   // The request may NAME a service as its first token — that's how the human checkout's
@@ -29,6 +29,8 @@ export async function deliverService(request: string): Promise<string> {
     case 'inference':
     case 'claude':
       return claudeInference(payload)
+    case 'txline':
+      return txlineService(payload)
     default:
       return jupiterSwapQuote(payload)
   }
@@ -129,4 +131,51 @@ async function newsHeadlines(request: string): Promise<string> {
     url: a.url,
   }))
   return JSON.stringify({ headlines, timestamp: new Date().toISOString() })
+}
+
+// TxODDS TxLINE — verified World Cup data (free devnet tier). Needs TXLINE_API_KEY, minted by the
+// one-time on-chain subscribe (see examples/txodds). Verbs (the buyer's request after `txline`):
+//   "fixtures"          → upcoming World Cup / Int Friendlies fixtures
+//   "odds <fixtureId>"  → de-margined StablePrice odds for a fixture
+//   "edge <fixtureId>"  → odds + an LLM value call (the on-thesis, all-three-pillars product)
+// Verified live on devnet (2026-06): host txline-dev.txodds.com; odds path is /api/odds/snapshot/{id};
+// every call needs the guest JWT *and* the activated X-Api-Token.
+const TXLINE_BASE = process.env.TXLINE_BASE_URL ?? 'https://txline-dev.txodds.com'
+
+async function txlineGet(path: string): Promise<unknown> {
+  const apiToken = process.env.TXLINE_API_KEY
+  if (!apiToken) return { error: 'TXLINE_API_KEY not set — run the one-time subscribe (see examples/txodds)' }
+  const auth = await fetch(`${TXLINE_BASE}/auth/guest/start`, { method: 'POST' })
+  if (!auth.ok) return { error: `txline auth ${auth.status}` }
+  const jwt = ((await auth.json()) as { token: string }).token
+  const res = await fetch(`${TXLINE_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${jwt}`, 'X-Api-Token': apiToken },
+  })
+  if (!res.ok) return { error: `txline ${path} ${res.status}` }
+  return res.json()
+}
+
+async function txlineService(request: string): Promise<string> {
+  const [verb, ...rest] = request.trim().split(/\s+/)
+  const fixtureId = rest[0]
+  switch ((verb || 'fixtures').toLowerCase()) {
+    case 'odds':
+      return JSON.stringify({ service: 'txline-odds', fixtureId, odds: await txlineGet(`/api/odds/snapshot/${fixtureId}`) })
+    case 'edge': {
+      const odds = await txlineGet(`/api/odds/snapshot/${fixtureId}`)
+      const raw = await claudeInference(
+        'You are a football trading analyst. From these de-margined World Cup odds, return JSON ' +
+          `{call, confidence} — a one-line value call and a 0-1 confidence. Odds: ${JSON.stringify(odds).slice(0, 1500)}`,
+      )
+      let analysis: unknown
+      try { analysis = JSON.parse(raw).completion ?? raw } catch { analysis = raw }
+      return JSON.stringify({ service: 'txline-edge', fixtureId, analysis })
+    }
+    case 'fixtures':
+    default: {
+      const fixtures = await txlineGet('/api/fixtures/snapshot')
+      const list = Array.isArray(fixtures) ? fixtures : []
+      return JSON.stringify({ service: 'txline-fixtures', count: list.length, fixtures: list.slice(0, 10) })
+    }
+  }
 }
