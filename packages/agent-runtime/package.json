@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "CoralOS MCP client + agent entrypoint for the Solana agent economy",
   "type": "module",
+  "engines": { "node": ">=20" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {

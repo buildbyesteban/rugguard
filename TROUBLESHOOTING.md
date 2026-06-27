@@ -49,7 +49,18 @@ coral launches the agents as containers — they must be **built first**:
 ```sh
 bash build-agents.sh        # or: just build
 ```
+No bash or `just` (e.g. Windows without Git Bash)? `npm run dev` builds the images for you, or run the
+two `docker build` commands from the README "by hand" path directly.
 Check: `docker images | grep agent`. coral needs the Docker socket (mounted in `docker-compose.yml`).
+
+### Native Linux Docker (not Docker Desktop): agents can't reach coral
+`examples/agent-economy/config/coral.toml` sets `[docker] address = "host.docker.internal"`, which
+**Docker Desktop** (Windows/macOS — the documented prereq) resolves automatically but **native Linux
+Docker** does not, so coral-spawned agent containers can't dial back to coral. Either:
+- set `[docker] address` in `coral.toml` to the Docker bridge gateway (usually `172.17.0.1`), or
+- ensure spawned containers map `host.docker.internal:host-gateway` (Docker Engine 20.10+).
+
+On Docker Desktop none of this applies.
 
 ### First round is slow
 On the first session coral pulls/launches the agent containers — give it **~20 seconds**. Watch with
@@ -80,12 +91,32 @@ agent images not built → LLM key missing → escrow program unreachable (RPC) 
 
 ---
 
+## World Cup demo (TxLINE)
+
+### `npm run dev` opens the *generic* market, not the World Cup
+The TxLINE mint step is fault-tolerant: if it fails, the demo clears the stale txline keys from `.env`
+and falls back to the generic market. The mint needs a **funded buyer wallet** and the TxLINE dev host
+(`txline-dev.txodds.com`) reachable. Fund the buyer, then re-run `npm run dev` (or `just mint`).
+
+### World Cup rounds error on delivery / `TXLINE_API_KEY not set`
+The TxLINE free-tier token is **short-lived** — re-mint before a demo with `just mint` (or `npm run dev`).
+If the host is unreachable, only the generic services (coingecko / jupiter / news / inference) will
+deliver; the World Cup specialist sits out.
+
+---
+
 ## Escrow contract
 
 ### `escrow IDL not found on-chain`
 The agents fetch the IDL from the deployed program. The default `PROGRAM_ID`
 (`R5NW…CeXet`) is on **devnet** — make sure `SOLANA_RPC_URL` points at devnet. If you redeployed your
 own program, run `anchor keys sync` and update the id in the agents' `escrow.ts`.
+Still failing on devnet with the default id? The shared demo deployment may have been removed — deploy
+your own and repoint:
+```sh
+cd examples/agent-economy/escrow && anchor build && anchor deploy --provider.cluster devnet
+anchor keys sync     # then update PROGRAM_ID in coral-agents/*/src/escrow.ts
+```
 
 ### `anchor build` fails (only if you fork the contract)
 Needs the Solana + Anchor toolchain (Anchor **0.32.x**). On Windows, if `target/deploy/escrow.so` is

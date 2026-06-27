@@ -2,6 +2,7 @@
   "name": "marketplace-feed",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=20" },
   "scripts": {
     "start": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",

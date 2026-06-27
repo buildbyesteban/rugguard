@@ -45,7 +45,7 @@ By hand (what `npm run dev` automates), e.g. to watch the raw agent transcript:
 
 ```sh
 node scripts/setup.js                                  # generate + fund devnet wallets → .env
-bash build-agents.sh                                   # build seller + buyer images (personas reuse seller)
+bash build-agents.sh                                   # build seller + buyer images (no bash? `npm run dev`/`just build`, or the two `docker build` cmds below)
 docker compose up -d coral                             # coral-server (MCP coordinator)
 cd examples/marketplace && npm install && npm start    # launch the generic market session
 docker logs -f buyer-agent                             # WANT → AWARD → DEPOSITED → RELEASED

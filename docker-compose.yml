@@ -1,6 +1,6 @@
 # Agent marketplace on CoralOS — single track, stock coral-server.
 #
-#   bash build-agents.sh                                 # build seller + buyer images
+#   bash build-agents.sh                                 # build images (no bash? `npm run dev` / `just build` build them for you)
 #   docker compose up -d coral                           # start coral-server (MCP coordinator)
 #   cd examples/marketplace && npm install && npm start  # launch the market session
 #

@@ -4,6 +4,7 @@
   "private": true,
   "description": "Solana agent marketplace — run the full demo with `npm run dev` (no `just` required).",
   "type": "module",
+  "engines": { "node": ">=20" },
   "scripts": {
     "dev": "node scripts/demo.js"
   }

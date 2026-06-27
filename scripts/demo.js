@@ -15,6 +15,13 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
+// Fail fast with a clear message on an unsupported Node (the kit targets Node 20+).
+const nodeMajor = Number(process.versions.node.split('.')[0])
+if (nodeMajor < 20) {
+  console.error(`[demo] Node ${process.version} detected — this kit needs Node 20+. Install it from nodejs.org, then re-run.`)
+  process.exit(1)
+}
+
 /** Run a command to completion, streaming its output. Returns true on success. */
 function run(cmd, args, cwd = root) {
   console.log(`\n\x1b[36m$ ${cmd} ${args.join(' ')}\x1b[0m`)

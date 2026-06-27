@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=20" },
   "description": "TxODDS World Cup oracle — an agent that sells verified sports data for devnet SOL",
   "scripts": {
     "typecheck": "tsc --noEmit",
