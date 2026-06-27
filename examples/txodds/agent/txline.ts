@@ -41,7 +41,7 @@ export class TxLineClient {
   private jwt: string | undefined
 
   constructor(opts: TxLineOptions = {}) {
-    this.baseUrl = opts.baseUrl ?? process.env.TXLINE_BASE_URL ?? DEVNET_BASE
+    this.baseUrl = opts.baseUrl || process.env.TXLINE_BASE_URL || DEVNET_BASE
     this.apiToken = opts.apiToken ?? process.env.TXLINE_API_KEY
   }
 

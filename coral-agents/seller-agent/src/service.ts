@@ -48,7 +48,7 @@ export async function deliverService(request: string): Promise<string> {
 async function claudeInference(request: string): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY
   if (!key) return JSON.stringify({ error: 'ANTHROPIC_API_KEY not set' })
-  const model = process.env.INFERENCE_MODEL ?? 'claude-opus-4-8'
+  const model = process.env.INFERENCE_MODEL || 'claude-opus-4-8' // `||`: toml passes "" for unset options
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -140,7 +140,8 @@ async function newsHeadlines(request: string): Promise<string> {
 //   "edge <fixtureId>"  → odds + an LLM value call (the on-thesis, all-three-pillars product)
 // Verified live on devnet (2026-06): host txline-dev.txodds.com; odds path is /api/odds/snapshot/{id};
 // every call needs the guest JWT *and* the activated X-Api-Token.
-const TXLINE_BASE = process.env.TXLINE_BASE_URL ?? 'https://txline-dev.txodds.com'
+// `||` not `??`: coral passes an empty-string default for unset options, which `??` would not catch.
+const TXLINE_BASE = process.env.TXLINE_BASE_URL || 'https://txline-dev.txodds.com'
 
 async function txlineGet(path: string): Promise<unknown> {
   const apiToken = process.env.TXLINE_API_KEY
@@ -156,20 +157,27 @@ async function txlineGet(path: string): Promise<unknown> {
 }
 
 async function txlineService(request: string): Promise<string> {
-  const [verb, ...rest] = request.trim().split(/\s+/)
-  const fixtureId = rest[0]
-  switch ((verb || 'fixtures').toLowerCase()) {
+  const tokens = request.trim().split(/\s+/).filter(Boolean)
+  // A bare fixture id (single numeric token) is treated as `edge <id>` — the on-thesis product, and it
+  // survives the single-token WANT `arg` the marketplace broadcasts (e.g. BUYER_ARG=17588245).
+  let verb = (tokens[0] ?? 'fixtures').toLowerCase()
+  let fixtureId = tokens[1]
+  if (/^\d+$/.test(verb)) { fixtureId = verb; verb = 'edge' }
+  switch (verb) {
     case 'odds':
       return JSON.stringify({ service: 'txline-odds', fixtureId, odds: await txlineGet(`/api/odds/snapshot/${fixtureId}`) })
     case 'edge': {
       const odds = await txlineGet(`/api/odds/snapshot/${fixtureId}`)
+      // Pull the 1X2 de-margined market so the buyer/UI gets the odds board, not just the call.
+      const m = Array.isArray(odds) ? (odds as Array<Record<string, unknown>>).find((x) => String(x.SuperOddsType ?? '').includes('1X2')) : undefined
+      const market = m ? { names: m.PriceNames, pct: m.Pct } : undefined
       const raw = await claudeInference(
         'You are a football trading analyst. From these de-margined World Cup odds, return JSON ' +
           `{call, confidence} — a one-line value call and a 0-1 confidence. Odds: ${JSON.stringify(odds).slice(0, 1500)}`,
       )
       let analysis: unknown
       try { analysis = JSON.parse(raw).completion ?? raw } catch { analysis = raw }
-      return JSON.stringify({ service: 'txline-edge', fixtureId, analysis })
+      return JSON.stringify({ service: 'txline-edge', fixtureId, market, analysis })
     }
     case 'fixtures':
     default: {

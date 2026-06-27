@@ -22,11 +22,16 @@ import { TxLineClient } from './txline.js'
 import { complete } from '@pay/agent-runtime'
 
 export async function deliverTxOdds(request: string): Promise<string> {
-  const [verb = 'fixtures', ...rest] = request.trim().split(/\s+/)
+  const tokens = request.trim().split(/\s+/).filter(Boolean)
+  // A bare fixture id (single numeric token) is treated as `edge <id>` — the on-thesis product, and it
+  // survives the single-token WANT `arg` the marketplace broadcasts (e.g. BUYER_ARG=17588245).
+  let verb = (tokens[0] ?? 'fixtures').toLowerCase()
+  let rest = tokens.slice(1)
+  if (/^\d+$/.test(verb)) { rest = [verb]; verb = 'edge' }
   const client = new TxLineClient()
 
   try {
-    switch (verb.toLowerCase()) {
+    switch (verb) {
       case 'fixtures': {
         const fixtures = await client.fixtures()
         return JSON.stringify({

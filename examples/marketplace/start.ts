@@ -66,13 +66,28 @@ async function main() {
   const seller = (name: string) =>
     agent(name, { SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str(name), ...llmOpts })
 
+  // World Cup specialist — only joins when a TxLINE token is present (see examples/txodds/DEMO.md).
+  // It carries SERVICES=txline + the token; the generalist personas decline txline WANTs automatically.
+  const txlineKey = env.TXLINE_API_KEY
+  const worldcup = txlineKey
+    ? [agent('seller-worldcup', {
+        SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str('seller-worldcup'),
+        SERVICES: str('txline'), FLOOR_SOL: f64(Number(env.WORLDCUP_FLOOR_SOL ?? '0.0005')),
+        TXLINE_API_KEY: str(txlineKey),
+        ...(env.TXLINE_BASE_URL ? { TXLINE_BASE_URL: str(env.TXLINE_BASE_URL) } : {}),
+        ...llmOpts,
+      })]
+    : []
+
+  const sellers = ['seller-cheap', 'seller-premium', 'seller-lazy', ...(txlineKey ? ['seller-worldcup'] : [])]
   const buyerOpts: Record<string, unknown> = {
     BUYER_KEYPAIR_B58: str(keypair),
     AGENT_NAME: str('buyer-agent'),
     SOLANA_RPC_URL: str(rpc),
     BUYER_MAX_SOL: f64(Number(env.BUYER_MAX_SOL ?? '0.001')),
     BUYER_SERVICE: str(env.BUYER_SERVICE ?? 'coingecko'),
-    MARKET_SELLERS: str('seller-cheap,seller-premium,seller-lazy'),
+    BUYER_ARG: str(env.BUYER_ARG ?? 'SOL-USDC'),
+    MARKET_SELLERS: str(sellers.join(',')),
     ...llmOpts,
   }
 
@@ -85,6 +100,7 @@ async function main() {
           seller('seller-cheap'),
           seller('seller-premium'),
           seller('seller-lazy'),
+          ...worldcup,
         ],
       },
       namespaceProvider: { type: 'create_if_not_exists', namespaceRequest: { name: NS } },
@@ -94,7 +110,7 @@ async function main() {
   if (!sres.ok) throw new Error(`session create failed: ${sres.status} ${await sres.text()}`)
   const { sessionId } = await sres.json() as { sessionId: string }
 
-  console.log(`\n✅ Market session ${sessionId} — buyer + seller-cheap/-premium/-lazy.`)
+  console.log(`\n✅ Market session ${sessionId} — buyer + ${sellers.join(', ')}.`)
   console.log(`   receive wallet: ${wallet}`)
   console.log('   The buyer broadcasts a WANT; sellers bid; the winner settles via escrow.\n')
   console.log('   Watch the market:')

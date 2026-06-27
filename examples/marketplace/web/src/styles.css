@@ -55,3 +55,16 @@ body { margin: 0; background: var(--bg); color: var(--txt); }
 .settle { color: var(--link); text-decoration: none; font-size: 12px; border: 1px solid var(--line); padding: 4px 8px; border-radius: 6px; }
 .settle:hover { border-color: var(--link); }
 .settle-refund { color: var(--refund); }
+
+/* World Cup edge panel (txline-edge deliveries) */
+.wc-panel { border: 1px solid var(--premium); border-radius: 10px; padding: 10px 12px; margin: 6px 0 10px; background: var(--bg); }
+.wc-head { font-size: 12px; color: var(--premium); margin-bottom: 10px; letter-spacing: .02em; }
+.wc-odds { display: flex; flex-direction: column; gap: 8px; }
+.wc-row { display: grid; grid-template-columns: 64px 40px 1fr; align-items: center; gap: 8px; }
+.wc-sel { font-size: 13px; font-weight: 600; }
+.wc-pct { font-size: 12px; color: var(--link); font-variant-numeric: tabular-nums; text-align: right; }
+.wc-bar { height: 6px; background: var(--panel); border-radius: 999px; overflow: hidden; }
+.wc-fill { height: 100%; background: linear-gradient(90deg, var(--link), var(--won)); border-radius: 999px; }
+.wc-call { margin: 12px 0 2px; font-size: 13px; color: var(--txt); border-top: 1px dashed var(--line); padding-top: 10px; }
+.wc-call strong { color: var(--premium); }
+.wc-conf { color: var(--dim); }
