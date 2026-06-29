@@ -46,6 +46,9 @@ const EXPECTED_SELLER_WALLET = process.env.SELLER_WALLET ?? ''
 const VERIFIER = (process.env.VERIFIER_NAME ?? '').trim()
 const VERIFIER_WALLET = (process.env.VERIFIER_WALLET ?? '').trim()
 const VERIFY_FEE_SOL = Number(process.env.VERIFY_FEE_SOL ?? '0.0001')
+// Stop after this many COMPLETED checks (0 = run forever). The dashboard sets this to 1 when a user
+// pastes a token, so "rug-check this token" does exactly one round instead of looping every cycle.
+const MAX_ROUNDS = Number(process.env.BUYER_MAX_ROUNDS ?? '0')
 const trace = process.env.TRACE === '1'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -122,8 +125,13 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
   await ensureRentFunded('verifier', VERIFIER_WALLET)
 
   let round = 0
+  let completed = 0 // rounds that reached a terminal outcome (settled / withheld / no-delivery)
 
   while (true) {
+    if (MAX_ROUNDS && completed >= MAX_ROUNDS) {
+      console.error(`[buyer] completed ${completed} check(s) — done (single-shot mode), idling.`)
+      break
+    }
     try {
       round++
       const arg = ARGS[(round - 1) % ARGS.length] // rotate fixtures so consecutive rounds differ
@@ -178,7 +186,7 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
 
       if (!delivered) {
         console.error(`[buyer] round ${round}: no delivery — funds stay in escrow, refundable after the deadline`)
-        await sleep(CYCLE_MS); continue
+        completed++; await sleep(CYCLE_MS); continue
       }
 
       // ── verification gate: an independent arbiter re-checks the delivery on-chain ──────────
@@ -200,13 +208,14 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
         // deadline. This is the dispute/no-show guarantee: the buyer never pays for a bad delivery.
         console.error(`[buyer] round ${round}: NOT RELEASED — verification failed; deposit refundable after the deadline`)
         await ctx.send(`WITHHELD round=${round} reason=verification-failed`, thread, [winner.by])
-        await sleep(CYCLE_MS); continue
+        completed++; await sleep(CYCLE_MS); continue
       }
 
       // Verified (or verification disabled) → release the escrow to the seller.
       const releaseSig = await release(program, buyer, seller, reference)
       console.error(`[buyer] round ${round}: RELEASED to ${winner.by} — ${expl('tx', releaseSig)}`)
       await ctx.send(`RELEASED round=${round} sig=${releaseSig}`, thread, [winner.by])
+      completed++ // a fully-settled check counts toward the round cap
 
       // Pay the independent verifier its flat fee on-chain — the second settlement in the graph.
       if (VERIFIER && VERIFIER_WALLET && VERIFY_FEE_SOL > 0) {

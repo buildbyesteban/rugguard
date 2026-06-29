@@ -61,7 +61,7 @@ app.post('/api/start', (req, res) => {
   const validMint = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint) ? mint : ''
   if (mint && !validMint) return res.status(400).json({ error: 'not a valid Solana token address' })
   const childEnv = validMint
-    ? { ...process.env, BUYER_SERVICE: 'rugcheck', BUYER_ARG: validMint, BUYER_ARGS: '' }
+    ? { ...process.env, BUYER_SERVICE: 'rugcheck', BUYER_ARG: validMint, BUYER_ARGS: '', BUYER_MAX_ROUNDS: '1' }
     : process.env
   const child = spawn('npm', ['start'], { cwd: MARKET_DIR, shell: true, env: childEnv })
   let buf = ''

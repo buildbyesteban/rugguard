@@ -94,6 +94,7 @@ async function main() {
       BUYER_ARG: str(mints[0]),
       ...(mints.length > 1 ? { BUYER_ARGS: str(mints.join(',')) } : {}),
       MARKET_SELLERS: str(rugSellers.join(',')),
+      ...(env.BUYER_MAX_ROUNDS ? { BUYER_MAX_ROUNDS: f64(Number(env.BUYER_MAX_ROUNDS)) } : {}),
       VERIFIER_NAME: str('verifier-agent'),
       ...(verifierWallet ? { VERIFIER_WALLET: str(verifierWallet) } : {}),
       ...(env.VERIFY_FEE_SOL ? { VERIFY_FEE_SOL: f64(Number(env.VERIFY_FEE_SOL)) } : {}),

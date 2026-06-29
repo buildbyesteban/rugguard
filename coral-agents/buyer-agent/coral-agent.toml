@@ -23,6 +23,7 @@ MARKET_SELLERS = { type = "string", default = "seller-cheap,seller-premium,selle
 VERIFIER_NAME = { type = "string", default = "", description = "Independent verifier agent name — when set, the buyer gates release on its VERIFIED verdict (rug-check market)" }
 VERIFIER_WALLET = { type = "string", default = "", description = "Verifier payout wallet — paid a flat fee on-chain after a confirmed release" }
 VERIFY_FEE_SOL = { type = "f64", default = 0.0001, description = "Flat fee the buyer pays the verifier per confirmed delivery" }
+BUYER_MAX_ROUNDS = { type = "f64", default = 0, description = "Stop after N completed checks (0 = run forever). The dashboard sets 1 for a pasted token so a rug-check runs once, not in a loop." }
 BID_WINDOW_MS = { type = "f64", default = 5000, description = "How long to collect competing bids each round" }
 CYCLE_INTERVAL_MS = { type = "f64", default = 30000, description = "Delay between market rounds" }
 SOLANA_RPC_URL = { type = "string", default = "", description = "Solana RPC URL (devnet)" }
