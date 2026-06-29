@@ -53,9 +53,17 @@ app.use(express.json())
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
-/** Operator trigger: launch a market session (runs the marketplace launcher) and return its id. */
-app.post('/api/start', (_req, res) => {
-  const child = spawn('npm', ['start'], { cwd: MARKET_DIR, shell: true })
+/** Operator trigger: launch a market session (runs the marketplace launcher) and return its id.
+ *  Optional ?mint=<address> screens a SPECIFIC token (else the .env default rotation). */
+app.post('/api/start', (req, res) => {
+  const mint = String((req.query.mint as string) || '').trim()
+  // Only a plausible base58 Solana address is forwarded — never raw user text into a spawned process.
+  const validMint = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint) ? mint : ''
+  if (mint && !validMint) return res.status(400).json({ error: 'not a valid Solana token address' })
+  const childEnv = validMint
+    ? { ...process.env, BUYER_SERVICE: 'rugcheck', BUYER_ARG: validMint, BUYER_ARGS: '' }
+    : process.env
+  const child = spawn('npm', ['start'], { cwd: MARKET_DIR, shell: true, env: childEnv })
   let buf = ''
   let done = false
   const reply = (code: number, body: unknown) => { if (!done) { done = true; res.status(code).json(body) } }

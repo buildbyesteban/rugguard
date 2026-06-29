@@ -117,3 +117,20 @@ body { margin: 0; background: var(--bg); color: var(--txt); }
 .vf-note { color: var(--dim); }
 .vf-fee { margin-left: auto; color: var(--link); text-decoration: none; border: 1px solid var(--line); padding: 2px 8px; border-radius: 6px; }
 .vf-fee:hover { border-color: var(--link); }
+
+/* ── token check bar (paste any mint) ─────────────────────────────────────────── */
+.check-bar { display:flex; gap:10px; margin:4px 0 8px; }
+.check-bar input {
+  flex:1; padding:12px 14px; background:var(--panel); color:var(--txt);
+  border:1px solid var(--line); border-radius:10px; font:inherit; font-size:15px;
+}
+.check-bar input:focus { outline:none; border-color:var(--mint, #3fd0c9); }
+.check-bar button {
+  padding:12px 18px; background:var(--won); color:#04130a; border:0; border-radius:10px;
+  font:inherit; font-weight:700; cursor:pointer; white-space:nowrap;
+}
+.check-bar button:disabled { opacity:.5; cursor:not-allowed; }
+.check-hint { color:var(--dim); font-size:12.5px; margin:0 2px 14px; display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.check-hint code { color:var(--link); font-size:11.5px; }
+.linklike { background:none; border:0; color:var(--link); cursor:pointer; font:inherit; padding:0; text-decoration:underline; }
+.session-inline { background:var(--bg); border:1px solid var(--line); border-radius:6px; color:var(--txt); font:inherit; font-size:12px; padding:3px 8px; width:200px; }
