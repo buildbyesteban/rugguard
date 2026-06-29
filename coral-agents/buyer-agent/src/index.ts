@@ -16,10 +16,11 @@
  * devnet wallet + live RPC, so they run in a live market session rather than in `npm test`/CI.
  */
 import {
-  startCoralAgent, complete, parseJsonReply, loadKeypairB58,
+  startCoralAgent, complete, parseJsonReply, loadKeypairB58, signTransfer,
   formatWant, parseBid, parseEscrowRequired, formatAward, formatDeposited,
+  formatVerifyRequest, parseVerdict,
   selectBids, pickCheapest, verb, messageRound,
-  type Bid, type EscrowTerms, type CoralAgentContext,
+  type Bid, type EscrowTerms, type Verdict, type CoralAgentContext,
 } from '@pay/agent-runtime'
 import { PublicKey } from '@solana/web3.js'
 import { makeProgram, deposit, release, escrowPda } from './escrow.js'
@@ -39,6 +40,12 @@ const SELLERS = (process.env.MARKET_SELLERS ?? 'seller-cheap,seller-premium')
 // F3: the payout wallet the buyer expects (personas share one in the demo). If set, the buyer refuses
 // to deposit to an ESCROW_REQUIRED whose seller= pubkey differs — binding the award to the payout.
 const EXPECTED_SELLER_WALLET = process.env.SELLER_WALLET ?? ''
+// Verification leg — the independent arbiter that re-checks the delivery on-chain before release.
+// When VERIFIER is set, the buyer gates release() on a VERIFIED ok=true and pays the verifier a flat
+// fee on-chain (an oracle paid to verify another agent's work). Empty → verification disabled.
+const VERIFIER = (process.env.VERIFIER_NAME ?? '').trim()
+const VERIFIER_WALLET = (process.env.VERIFIER_WALLET ?? '').trim()
+const VERIFY_FEE_SOL = Number(process.env.VERIFY_FEE_SOL ?? '0.0001')
 const trace = process.env.TRACE === '1'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -87,11 +94,33 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
   const buyer = loadKeypairB58('BUYER_KEYPAIR_B58')
   console.error(`[buyer] market buyer — wallet=${buyer.publicKey.toBase58()} budget=${BUDGET} sellers=[${SELLERS.join(',')}]`)
 
-  for (const s of SELLERS) {
-    try { await ctx.waitForAgent(s, 8000) } catch { /* seller may already be present */ }
+  // The verifier joins the same thread so the buyer can hand it deliveries to re-check.
+  const participants = [...SELLERS, ...(VERIFIER ? [VERIFIER] : [])]
+  for (const s of participants) {
+    try { await ctx.waitForAgent(s, 8000) } catch { /* may already be present */ }
   }
-  const thread = await ctx.createThread('market', SELLERS)
+  if (VERIFIER) console.error(`[buyer] verification ON — ${VERIFIER} re-checks each delivery; fee=${VERIFY_FEE_SOL} SOL`)
+  const thread = await ctx.createThread('market', participants)
   const program = await makeProgram(buyer, RPC)
+
+  // Rent bootstrap: a brand-new receive wallet that has never held SOL can't accept a sub-rent
+  // payment — the escrow `release` (or the verifier fee) would fail "insufficient funds for rent".
+  // On devnet the buyer tops up its counterparties to rent-exemption ONCE so the one-command demo
+  // works with only the buyer funded. No-op if already funded or the same wallet as the buyer.
+  const ensureRentFunded = async (label: string, addr: string) => {
+    if (!addr || addr === buyer.publicKey.toBase58()) return
+    try {
+      const bal = await program.provider.connection.getBalance(new PublicKey(addr))
+      if (bal >= 0.002 * 1e9) return
+      const sig = await signTransfer(buyer, addr, 0.01, { maxSol: 0.05 })
+      console.error(`[buyer] rent-funded ${label} ${addr} (0.01 SOL) — ${expl('tx', sig)}`)
+    } catch (e) {
+      console.error(`[buyer] rent-fund ${label} failed (non-fatal): ${(e as Error).message}`)
+    }
+  }
+  await ensureRentFunded('seller', EXPECTED_SELLER_WALLET)
+  await ensureRentFunded('verifier', VERIFIER_WALLET)
+
   let round = 0
 
   while (true) {
@@ -138,17 +167,56 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
         thread, [winner.by],
       )
 
+      // Capture the DELIVERED message WITH its report payload (everything after the round tag), so the
+      // buyer can hand the report to the verifier.
       const delivered = await waitFor(ctx, round, (t) => {
         const r = messageRound(t)
-        return verb(t) === 'DELIVERED' && r != null ? { round: r } : null
+        if (verb(t) !== 'DELIVERED' || r == null) return null
+        const report = t.replace(/^DELIVERED\s+round=\d+\s*/, '').trim()
+        return { round: r, report }
       }, 30_000)
 
-      if (delivered) {
-        const releaseSig = await release(program, buyer, seller, reference)
-        console.error(`[buyer] round ${round}: RELEASED to ${winner.by} — ${expl('tx', releaseSig)}`)
-        await ctx.send(`RELEASED round=${round} sig=${releaseSig}`, thread, [winner.by])
-      } else {
+      if (!delivered) {
         console.error(`[buyer] round ${round}: no delivery — funds stay in escrow, refundable after the deadline`)
+        await sleep(CYCLE_MS); continue
+      }
+
+      // ── verification gate: an independent arbiter re-checks the delivery on-chain ──────────
+      let confirmed = true
+      if (VERIFIER) {
+        await ctx.send(formatVerifyRequest({ round, seller: winner.by, report: delivered.report }), thread, [VERIFIER])
+        const verdict = await waitFor<Verdict>(ctx, round, parseVerdict, 30_000)
+        if (!verdict) {
+          confirmed = false
+          console.error(`[buyer] round ${round}: no verdict from ${VERIFIER} — withholding release`)
+        } else {
+          confirmed = verdict.ok
+          console.error(`[buyer] round ${round}: verifier ${verdict.ok ? 'CONFIRMED ✓' : 'REJECTED ✗'} — ${verdict.note ?? ''}`)
+        }
+      }
+
+      if (!confirmed) {
+        // The report failed independent verification. Do NOT release — the deposit refunds after the
+        // deadline. This is the dispute/no-show guarantee: the buyer never pays for a bad delivery.
+        console.error(`[buyer] round ${round}: NOT RELEASED — verification failed; deposit refundable after the deadline`)
+        await ctx.send(`WITHHELD round=${round} reason=verification-failed`, thread, [winner.by])
+        await sleep(CYCLE_MS); continue
+      }
+
+      // Verified (or verification disabled) → release the escrow to the seller.
+      const releaseSig = await release(program, buyer, seller, reference)
+      console.error(`[buyer] round ${round}: RELEASED to ${winner.by} — ${expl('tx', releaseSig)}`)
+      await ctx.send(`RELEASED round=${round} sig=${releaseSig}`, thread, [winner.by])
+
+      // Pay the independent verifier its flat fee on-chain — the second settlement in the graph.
+      if (VERIFIER && VERIFIER_WALLET && VERIFY_FEE_SOL > 0) {
+        try {
+          const feeSig = await signTransfer(buyer, VERIFIER_WALLET, VERIFY_FEE_SOL, { maxSol: BUDGET })
+          console.error(`[buyer] round ${round}: paid verifier ${VERIFY_FEE_SOL} SOL — ${expl('tx', feeSig)}`)
+          await ctx.send(`VERIFIER_PAID round=${round} sig=${feeSig}`, thread, [VERIFIER])
+        } catch (e) {
+          console.error(`[buyer] round ${round}: verifier fee failed — ${(e as Error).message}`)
+        }
       }
     } catch (e) {
       console.error(`[buyer] round error: ${e}`)

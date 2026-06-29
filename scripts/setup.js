@@ -2,8 +2,9 @@
 // Generates devnet wallets, writes .env, and saves the addresses to WALLETS.txt.
 // Safe to re-run: existing wallets/keys are preserved; only what's missing is generated.
 //
-// Usage: node scripts/setup.js            # buyer + seller wallets (the core demo)
-//        node scripts/setup.js --broker   # also provision a broker wallet (swarm extension, docs/SWARM.md)
+// Usage: node scripts/setup.js              # buyer + seller wallets (the core demo)
+//        node scripts/setup.js --rugcheck   # also provision a verifier wallet + rug-check defaults
+//        node scripts/setup.js --broker     # also provision a broker wallet (swarm extension, docs/SWARM.md)
 
 import { Keypair } from '@solana/web3.js'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
@@ -17,6 +18,7 @@ const envPath = join(root, '.env')
 const examplePath = join(root, '.env.example')
 const walletsPath = join(root, 'WALLETS.txt')
 const withBroker = process.argv.includes('--broker')
+const withRugcheck = process.argv.includes('--rugcheck')
 
 /** Set or append `KEY=value` without disturbing the rest of the file. */
 function setKv(text, key, value) {
@@ -49,6 +51,21 @@ if (withBroker) {
   env = setKv(env, 'ENABLE_BROKER', '1')
 }
 
+// Rug-check market: the verifier needs a wallet to RECEIVE its fee (a SOL transfer creates the
+// account, so it needs no pre-funding). We store its keypair for completeness but the buyer only
+// uses the pubkey. Also flip the buyer to the rug-check service + a default mint to screen.
+let verifierPubkey
+if (withRugcheck) {
+  const verifierB58 = getKv(env, 'VERIFIER_KEYPAIR_B58') || bs58.encode(Keypair.generate().secretKey)
+  verifierPubkey = Keypair.fromSecretKey(bs58.decode(verifierB58)).publicKey.toBase58()
+  env = setKv(env, 'VERIFIER_KEYPAIR_B58', verifierB58)
+  env = setKv(env, 'VERIFIER_WALLET', verifierPubkey)
+  env = setKv(env, 'BUYER_SERVICE', 'rugcheck')
+  // Default rug-check targets: BONK (authorities renounced → LOW) + USDC (Circle keeps mint/freeze → flagged).
+  env = setKv(env, 'BUYER_ARG', getKv(env, 'BUYER_ARG') || 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263')
+  env = setKv(env, 'VERIFY_FEE_SOL', getKv(env, 'VERIFY_FEE_SOL') || '0.0001')
+}
+
 writeFileSync(envPath, env)
 
 // ── report ──
@@ -58,9 +75,10 @@ const block = [
   '',
   `  Seller wallet  ${sellerPubkey}`,
   `  Buyer  wallet  ${buyerPubkey}`,
+  ...(verifierPubkey ? [`  Verifier wallet ${verifierPubkey}   (receives its fee — no funding needed)`] : []),
   ...(brokerPubkey ? [`  Broker wallet  ${brokerPubkey}   (swarm extension)`] : []),
   '',
-  `FUND ${brokerPubkey ? 'ALL THREE' : 'BOTH'} with devnet SOL — the only way is the web faucet`,
+  `FUND ${brokerPubkey ? 'ALL THREE' : 'the BUYER (and seller)'} with devnet SOL — the only way is the web faucet`,
   '(sign in with GitHub; CLI/RPC airdrops are gated):',
   '',
   '  https://faucet.solana.com',

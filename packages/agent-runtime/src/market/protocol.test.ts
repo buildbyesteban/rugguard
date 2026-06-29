@@ -2,9 +2,33 @@ import { describe, it, expect } from 'vitest'
 import {
   formatWant, parseWant, formatBid, parseBid, formatAward, parseAward,
   formatEscrowRequired, parseEscrowRequired, formatDeposited, parseDeposited,
+  formatVerifyRequest, parseVerifyRequest, formatVerdict, parseVerdict,
   selectBids, pickCheapest, verb, messageRound,
   type Bid,
 } from './protocol.js'
+
+describe('VERIFY request round-trip', () => {
+  it('carries a spaces-and-symbols report through base64', () => {
+    const report = JSON.stringify({ service: 'rugcheck', verdict: 'HIGH RISK: mint authority active', n: 1 })
+    const v = { round: 4, seller: 'seller-scanner', report }
+    expect(parseVerifyRequest(formatVerifyRequest(v))).toEqual(v)
+  })
+  it('rejects a non-VERIFY', () => {
+    expect(parseVerifyRequest('DELIVERED round=4 {}')).toBeNull()
+  })
+})
+
+describe('VERIFIED verdict round-trip', () => {
+  it('formats and parses ok=true with a note', () => {
+    const v = { round: 4, ok: true, seller: 'seller-auditor', note: 'on-chain facts match' }
+    expect(parseVerdict(formatVerdict(v))).toEqual(v)
+  })
+  it('parses ok=false', () => {
+    const p = parseVerdict('VERIFIED round=9 ok=false seller=seller-scanner note=mint authority mismatch')
+    expect(p?.ok).toBe(false)
+    expect(p?.round).toBe(9)
+  })
+})
 
 describe('WANT round-trip', () => {
   it('formats and parses', () => {

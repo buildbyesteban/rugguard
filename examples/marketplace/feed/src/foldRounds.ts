@@ -6,6 +6,7 @@
  */
 import {
   verb, messageRound, parseWant, parseBid, parseAward, parseEscrowRequired, parseDeposited,
+  parseVerifyRequest, parseVerdict,
 } from '@pay/agent-runtime'
 
 export interface RawMessage {
@@ -19,7 +20,8 @@ export interface RoundBid {
   note?: string
 }
 
-export type RoundStatus = 'bidding' | 'awarded' | 'deposited' | 'delivered' | 'settled' | 'refunded'
+export type RoundStatus =
+  | 'bidding' | 'awarded' | 'deposited' | 'delivered' | 'verifying' | 'rejected' | 'settled' | 'refunded'
 
 export interface Round {
   round: number
@@ -31,6 +33,10 @@ export interface Round {
   escrow?: { reference: string; seller: string; amountSol: number; deadlineSecs: number }
   deposit?: { sig: string; buyer: string }
   delivered?: { raw: string; data?: unknown }
+  /** The independent verifier's verdict on the delivery (rug-check market). */
+  verdict?: { ok: boolean; seller: string; note?: string }
+  /** The on-chain fee paid to the verifier after a confirmed release. */
+  verifierPaid?: { sig: string }
   release?: { sig: string }
   refunded?: boolean
   status: RoundStatus
@@ -80,13 +86,31 @@ export function foldRounds(messages: RawMessage[], sellers: string[] = []): Roun
     const dep = parseDeposited(text)
     if (dep) { const r = get(dep.round); r.deposit = { sig: dep.sig, buyer: dep.buyer }; if (r.status !== 'settled') r.status = 'deposited'; continue }
 
+    // Rug-check verification leg. VERIFY (buyer → verifier) opens the verifying state; VERIFIED carries
+    // the verdict; VERIFIER_PAID records the fee; WITHHELD marks a failed verification.
+    const vreq = parseVerifyRequest(text)
+    if (vreq) { const r = get(vreq.round); if (r.status === 'delivered') r.status = 'verifying'; continue }
+    const vd = parseVerdict(text)
+    if (vd) {
+      const r = get(vd.round)
+      r.verdict = { ok: vd.ok, seller: vd.seller, note: vd.note }
+      if (!vd.ok && r.status !== 'settled') r.status = 'rejected'
+      continue
+    }
+
     const v = verb(text)
     const r = messageRound(text)
-    if (v === 'DELIVERED' && r != null) {
+    if (v === 'VERIFIER_PAID' && r != null) {
+      const sig = text.match(/sig=(\S+)/)?.[1]
+      if (sig) get(r).verifierPaid = { sig }
+    } else if (v === 'WITHHELD' && r != null) {
+      const round = get(r)
+      if (round.status !== 'settled') round.status = 'rejected'
+    } else if (v === 'DELIVERED' && r != null) {
       const round = get(r)
       const raw = text.replace(/^DELIVERED\s+round=\d+\s*/i, '').trim()
       round.delivered = { raw, data: tryJson(raw) }
-      if (round.status !== 'settled') round.status = 'delivered'
+      if (round.status !== 'settled' && round.status !== 'verifying' && round.status !== 'rejected') round.status = 'delivered'
     } else if (v === 'RELEASED' && r != null) {
       const round = get(r)
       const sig = text.match(/sig=(\S+)/)?.[1]

@@ -1,0 +1,33 @@
+edition = 4
+
+[agent]
+name = "seller-scanner"
+version = "0.1.0"
+description = "Marketplace seller persona — fast on-chain rug scanner. Reuses the seller-agent image; sells the `rugcheck` service (mint/freeze authority + holder concentration → a risk verdict), bidding low to win volume but never below its floor."
+summary = "A low-cost, high-speed token rug scanner for the agent marketplace."
+readme = "Bids in the shared market thread on `rugcheck` WANTs, wins on price, reads the token's on-chain facts and an LLM verdict, then settles via escrow — and only after an independent verifier re-checks the delivery on-chain. Same image as seller-agent; the PERSONA/FLOOR_SOL/SERVICES options shape how it competes."
+
+[agent.license]
+type = "spdx"
+expression = "MIT"
+
+[options]
+SELLER_WALLET = { type = "string", description = "Devnet wallet pubkey that receives payments" }
+AGENT_NAME = { type = "string", default = "seller-scanner", description = "Market identity (matches the registry name)" }
+SERVICES = { type = "string", default = "rugcheck", description = "Inventory — this persona bids only on rugcheck (token risk reports)" }
+FLOOR_SOL = { type = "f64", default = 0.0002, description = "Cost floor — the LLM may never bid below this" }
+PERSONA = { type = "string", default = "a fast, low-cost on-chain rug scanner who wins on price and speed, but never bids below the floor", description = "Bidding persona (LLM system prompt)" }
+SERVICE = { type = "string", default = "rugcheck", description = "What deliverService returns: rugcheck <mint>" }
+RUGCHECK_RPC_URL = { type = "string", default = "", description = "Mainnet RPC for the read-only token analysis (Helius/QuickNode serves holder concentration reliably; defaults to public mainnet-beta)" }
+SOLANA_RPC_URL = { type = "string", default = "", description = "Solana RPC URL (devnet — settlement)" }
+ESCROW_DEADLINE_SECS = { type = "f64", default = 600, description = "Refund deadline for escrow deposits (seconds)" }
+ANTHROPIC_API_KEY = { type = "string", default = "", description = "Anthropic key (default brain — writes the human verdict)" }
+OPENAI_API_KEY = { type = "string", default = "", description = "OpenAI key — set with LLM_PROVIDER=openai to flip the brain" }
+LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai" }
+LLM_MODEL = { type = "string", default = "", description = "Override the LLM model id" }
+INFERENCE_MODEL = { type = "string", default = "", description = "Model for the verdict line (default claude-opus-4-8)" }
+TRACE = { type = "string", default = "", description = "Set to 1 to log CoralOS calls + on-chain steps" }
+
+# Reuses the already-built seller-agent image — no separate build needed.
+[runtimes.docker]
+image = "seller-agent:0.1.0"

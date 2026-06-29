@@ -1,0 +1,24 @@
+edition = 4
+
+[agent]
+name = "verifier-agent"
+version = "0.1.0"
+description = "Independent rug-check verifier — an oracle paid to verify another agent's work. On a buyer's VERIFY request it re-reads the same Solana mint from the chain, compares it against the seller's delivered report, and posts a VERIFIED verdict the buyer gates escrow release on. Holds no keypair; reads mainnet read-only."
+summary = "The arbiter that re-checks a rug-check delivery on-chain before the buyer releases escrow."
+readme = "Turns the buyer↔seller pair into a graph. Receives VERIFY round=… seller=… report=<base64>, independently fetches the mint's on-chain facts (mint/freeze authority, supply, holder concentration), compares them with the seller's claimed facts (authorities must match; concentration within tolerance when both reads have data), re-derives the risk level, and replies VERIFIED round=… ok=true|false. The buyer releases only on ok=true and pays the verifier a small flat fee on-chain. Never trusts the seller's numbers — the chain is the source of truth."
+
+[agent.license]
+type = "spdx"
+expression = "MIT"
+
+[options]
+AGENT_NAME = { type = "string", default = "verifier-agent", description = "Market identity (matches the registry name)" }
+RUGCHECK_RPC_URL = { type = "string", default = "", description = "Mainnet RPC for the independent read-only re-check (a Helius/QuickNode URL serves holder concentration reliably; defaults to public mainnet-beta)" }
+ANTHROPIC_API_KEY = { type = "string", default = "", description = "Unused today; reserved for an LLM second-opinion on the verdict" }
+OPENAI_API_KEY = { type = "string", default = "", description = "Reserved (LLM_PROVIDER=openai)" }
+LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai" }
+TRACE = { type = "string", default = "", description = "Set to 1 to log each verdict + reasoning" }
+
+# Its own image (it doesn't carry the escrow/anchor deps the seller/buyer do).
+[runtimes.docker]
+image = "verifier-agent:0.1.0"

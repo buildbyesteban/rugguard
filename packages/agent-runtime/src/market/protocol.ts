@@ -43,6 +43,24 @@ export interface Deposited {
   sig: string
 }
 
+export interface Verdict {
+  round: number
+  /** true → the verifier independently confirmed the delivery; the buyer may release escrow. */
+  ok: boolean
+  /** Who delivered the work being judged (the seller). */
+  seller: string
+  /** Free-text reason, surfaced into the transcript/UI. */
+  note?: string
+}
+
+export interface VerifyRequest {
+  round: number
+  /** The seller whose delivery is being checked. */
+  seller: string
+  /** The seller's delivered report (the JSON string deliverService returned). */
+  report: string
+}
+
 const num = (text: string, key: string): number | undefined => {
   const m = text.match(new RegExp(`${key}=([\\d.]+)`))
   return m ? Number(m[1]) : undefined
@@ -131,6 +149,42 @@ export function parseDeposited(text: string): Deposited | null {
   const sig = tok(text, 'sig')
   if (round == null || !reference || !buyer || !sig) return null
   return { round, reference, buyer, sig }
+}
+
+// ── VERIFY (request) ──────────────────────────────────────────────────────────────
+// Buyer → verifier: "independently check this delivery". The report is base64'd so the whole message
+// stays single-token-parseable (the report JSON is full of spaces and `=`/`"` that would break tok()).
+export function formatVerifyRequest(v: VerifyRequest): string {
+  const b64 = Buffer.from(v.report, 'utf8').toString('base64')
+  return `VERIFY round=${v.round} seller=${v.seller} report=${b64}`
+}
+export function parseVerifyRequest(text: string): VerifyRequest | null {
+  if (verb(text) !== 'VERIFY') return null
+  const round = num(text, 'round')
+  const seller = tok(text, 'seller')
+  const b64 = tok(text, 'report')
+  if (round == null || !seller || !b64) return null
+  let report: string
+  try { report = Buffer.from(b64, 'base64').toString('utf8') } catch { return null }
+  return { round, seller, report }
+}
+
+// ── VERIFIED ────────────────────────────────────────────────────────────────────
+// Posted by the verifier/arbiter agent after it INDEPENDENTLY re-checks the seller's delivery against
+// the chain. The buyer gates `release()` on `ok=true`; on `ok=false` it withholds release and the
+// deposit refunds after the deadline. This is the "oracle paid to verify another's work" leg.
+export function formatVerdict(v: Verdict): string {
+  const base = `VERIFIED round=${v.round} ok=${v.ok} seller=${v.seller}`
+  return v.note ? `${base} note=${v.note.replace(/\s+/g, ' ').trim()}` : base
+}
+export function parseVerdict(text: string): Verdict | null {
+  if (verb(text) !== 'VERIFIED') return null
+  const round = num(text, 'round')
+  const okTok = tok(text, 'ok')
+  const seller = tok(text, 'seller')
+  if (round == null || okTok == null || !seller) return null
+  const note = text.match(/note=(.+)$/)?.[1]?.trim()
+  return { round, ok: okTok === 'true', seller, ...(note ? { note } : {}) }
 }
 
 // ── selection ───────────────────────────────────────────────────────────────────

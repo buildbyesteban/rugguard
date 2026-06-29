@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RugGuard — pitch deck</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root {
+    --bg:#0b0e14; --panel:#141a24; --line:#232b38; --txt:#e6edf3; --dim:#8b97a7;
+    --won:#2ea043; --premium:#d29922; --refund:#cf462d; --link:#58a6ff; --mint:#3fd0c9;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { background:#05070b; color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .slide {
+    width:1280px; height:720px; position:relative; overflow:hidden;
+    background:radial-gradient(1200px 500px at 80% -10%, rgba(63,208,201,0.10), transparent 60%),
+               radial-gradient(900px 500px at 0% 110%, rgba(88,166,255,0.08), transparent 55%), var(--bg);
+    padding:72px 84px; display:flex; flex-direction:column; page-break-after:always;
+  }
+  .kick { color:var(--mint); font-size:15px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; margin-bottom:18px; }
+  h1 { font-size:62px; line-height:1.04; font-weight:800; letter-spacing:-0.02em; }
+  h2 { font-size:40px; line-height:1.1; font-weight:800; letter-spacing:-0.01em; margin-bottom:26px; }
+  .lead { font-size:23px; line-height:1.5; color:var(--dim); max-width:920px; }
+  .lead strong { color:var(--txt); }
+  .grad { background:linear-gradient(92deg,var(--mint),var(--link)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .foot { position:absolute; left:84px; bottom:40px; color:var(--dim); font-size:14px; letter-spacing:.04em; }
+  .pageno { position:absolute; right:84px; bottom:40px; color:var(--dim); font-size:14px; }
+  .row { display:flex; gap:20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px 24px; flex:1; }
+  .card h3 { font-size:17px; color:var(--mint); margin-bottom:10px; letter-spacing:.02em; }
+  .card p { font-size:16px; line-height:1.5; color:var(--dim); }
+  .card p strong { color:var(--txt); }
+  .mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .big { font-size:30px; font-weight:800; }
+  .pill { display:inline-block; font-size:13px; font-weight:700; padding:4px 12px; border-radius:999px; border:1px solid; }
+  .p-high { color:var(--refund); border-color:var(--refund); }
+  .p-ok { color:var(--won); border-color:var(--won); }
+  .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .step { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-size:15px; font-weight:700; }
+  .step.s-pay { border-color:var(--won); color:var(--won); }
+  .step.s-verify { border-color:var(--link); color:var(--link); }
+  .arr { color:var(--dim); font-size:18px; }
+  .center { justify-content:center; text-align:center; align-items:center; }
+  .title-wrap { flex:1; display:flex; flex-direction:column; justify-content:center; }
+  ul.clean { list-style:none; display:flex; flex-direction:column; gap:14px; margin-top:10px; }
+  ul.clean li { font-size:19px; line-height:1.45; color:var(--dim); padding-left:30px; position:relative; }
+  ul.clean li::before { content:"→"; position:absolute; left:0; color:var(--mint); font-weight:800; }
+  ul.clean li strong { color:var(--txt); }
+  .link { color:var(--link); text-decoration:none; }
+  .verdict { font-size:20px; color:var(--txt); border-left:3px solid var(--mint); padding-left:16px; margin:14px 0; line-height:1.5; }
+  .tag { color:var(--mint); font-weight:700; }
+  .gauge { height:12px; background:var(--bg); border:1px solid var(--line); border-radius:999px; overflow:hidden; margin:14px 0 6px; max-width:520px; }
+  .gfill { height:100%; border-radius:999px; }
+</style>
+</head>
+<body>
+
+<!-- 1 — TITLE / THE MOMENT (lead with settlement) -->
+<section class="slide">
+  <div class="kick">Solana × CoralOS · agents that earn</div>
+  <div class="title-wrap">
+    <h1>The moment an agent decides<br/>to <span class="grad">pay to not get rugged.</span></h1>
+    <p class="lead" style="margin-top:28px;">
+      <strong>RugGuard</strong> is an open market where an autonomous buyer agent pays — at machine speed, on-chain —
+      to learn whether a Solana token is safe <em>before</em> it apes in. Seller agents compete to deliver the
+      verdict; an independent oracle re-checks it; the winner is paid through a Solana escrow only on a verified
+      delivery. <strong>No human in the loop.</strong>
+    </p>
+    <div class="flow" style="margin-top:34px;">
+      <span class="step">buyer: “is DezX… safe?”</span><span class="arr">→</span>
+      <span class="step">2 sellers bid</span><span class="arr">→</span>
+      <span class="step s-verify">oracle re-checks chain</span><span class="arr">→</span>
+      <span class="step s-pay">escrow releases 0.0002 ◎</span>
+    </div>
+  </div>
+  <div class="foot">RugGuard · a rug-check oracle marketplace · built on the solana_coralOS kit</div>
+  <div class="pageno">1 / 5</div>
+</section>
+
+<!-- 2 — WHAT IT SELLS -->
+<section class="slide">
+  <div class="kick">What it sells</div>
+  <h2><span class="mono">deliverService("rugcheck &lt;mint&gt;")</span></h2>
+  <p class="lead">One line: <strong>give it a token mint, get back a risk verdict drawn from the token's own
+    on-chain facts</strong> — read live from mainnet, scored deterministically, with an LLM writing the human call on top.</p>
+  <div class="row" style="margin-top:36px;">
+    <div class="card">
+      <h3>The on-chain facts (source of truth)</h3>
+      <p><strong>Mint authority</strong> — can the team print unlimited supply?<br/>
+         <strong>Freeze authority</strong> — can they freeze your wallet so you can't sell?<br/>
+         <strong>Holder concentration</strong> — does one wallet hold enough to crash it?</p>
+    </div>
+    <div class="card">
+      <h3>The delivered report</h3>
+      <span class="pill p-high">HIGH RISK · 60/100</span>
+      <div class="gauge"><div class="gfill" style="width:60%;background:var(--refund);"></div></div>
+      <p class="verdict" style="font-size:16px;border-color:var(--refund);">“Mint authority is still active — supply can be inflated at any time. Treat as high risk.”</p>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:26px;font-size:18px;">The model <strong>proposes</strong>, code <strong>disposes</strong>: the score and signals are code-derived from the chain, so a token's name can't talk its way to a clean verdict.</p>
+  <div class="foot">RugGuard</div><div class="pageno">2 / 5</div>
+</section>
+
+<!-- 3 — WHY THEY PAY + PRICE -->
+<section class="slide">
+  <div class="kick">Why they pay · and the price</div>
+  <h2>One rug is a 100% loss.<br/>A check is <span class="grad">0.0002 ◎</span> of insurance, priced for machines.</h2>
+  <ul class="clean">
+    <li><strong>The customer is software.</strong> Trading bots, treasury agents and DeFi routers now hold and move funds on-chain — they need a safety check that runs at machine speed, not a human reading a block explorer.</li>
+    <li><strong>The value is asymmetric.</strong> The downside of skipping the check is the entire position; the cost of the check is a fraction of a cent. That's an easy buy — millions of times a day.</li>
+    <li><strong>Best value, not just cheapest.</strong> A <span class="tag">fast scanner</span> (floor 0.0002 ◎) competes with a <span class="tag">deep auditor</span> (floor 0.0004 ◎); the buyer's LLM picks value inside a code-enforced budget.</li>
+  </ul>
+  <div class="foot">RugGuard</div><div class="pageno">3 / 5</div>
+</section>
+
+<!-- 4 — THE ECONOMY: A GRAPH -->
+<section class="slide">
+  <div class="kick">The economy — a graph, not a pair</div>
+  <h2>An oracle gets paid to keep the sellers honest.</h2>
+  <div class="row" style="margin-top:10px;">
+    <div class="card"><h3>Buyer</h3><p>Broadcasts a WANT, judges best value, deposits to escrow, releases on a verified delivery — or lets it refund.</p></div>
+    <div class="card"><h3>2 competing sellers</h3><p>Scanner vs auditor self-select onto rug-check jobs and bid; the market sets the price, not a list.</p></div>
+    <div class="card" style="border-color:var(--link);"><h3 style="color:var(--link);">Independent verifier</h3><p>Re-reads the same mint from the chain. <strong>Never trusts the seller's numbers.</strong> Posts a pass/fail the buyer gates release on.</p></div>
+  </div>
+  <ul class="clean" style="margin-top:30px;">
+    <li><strong>Two settlements per deal:</strong> escrow → the winning seller, and a flat fee → the verifier. Add an agent and the pair becomes a graph.</li>
+    <li><strong>Holds up under dispute / no-show:</strong> a fabricated or undelivered report fails verification → no release → the deposit refunds after the deadline. The buyer never pays for a bad answer.</li>
+  </ul>
+  <div class="foot">RugGuard</div><div class="pageno">4 / 5</div>
+</section>
+
+<!-- 5 — PROOF (this slide wins) -->
+<section class="slide">
+  <div class="kick">Proof — live on devnet</div>
+  <h2>It settled on-chain. Here's the receipt.</h2>
+  <div class="flow">
+    <span class="step">WANT</span><span class="arr">→</span>
+    <span class="step">BID ×2</span><span class="arr">→</span>
+    <span class="step">AWARD</span><span class="arr">→</span>
+    <span class="step s-pay">DEPOSITED</span><span class="arr">→</span>
+    <span class="step">DELIVERED</span><span class="arr">→</span>
+    <span class="step s-verify">VERIFIED ✓</span><span class="arr">→</span>
+    <span class="step s-pay">RELEASED</span>
+  </div>
+  <div class="row" style="margin-top:34px;">
+    <div class="card">
+      <h3>Escrow released to the seller</h3>
+      <p class="mono" style="font-size:13px;word-break:break-all;"><a class="link" id="release-link" href="https://explorer.solana.com/tx/4JKyDHQNJ5BiZGiCodGRNxpLoVVevoFquaSyi5k34DRZMJFPvddePSia3CKVAeLpFWbo1zQGiw2KdARUiDXB6Tjv?cluster=devnet">explorer.solana.com/tx/4JKyDHQN…6Tjv</a></p>
+      <p style="margin-top:10px;">0.0002 ◎ moved from escrow PDA to the winning seller — only after the verifier confirmed the report against the chain.</p>
+    </div>
+    <div class="card" style="border-color:var(--link);">
+      <h3 style="color:var(--link);">Verifier paid its fee</h3>
+      <p class="mono" style="font-size:13px;word-break:break-all;"><a class="link" id="fee-link" href="https://explorer.solana.com/tx/5bgqwpJ7EJptmrEUP2VGvJf61nVdKd6Wy9Pu7Yxxischv1zWjhjQrkot57TA7vy1wPM9rDSh8Z5UShcZBGteUL1p?cluster=devnet">explorer.solana.com/tx/5bgqwpJ7…eUL1p</a></p>
+      <p style="margin-top:10px;">The second settlement: the oracle earns for the work of keeping the market honest.</p>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:28px;font-size:18px;"><strong>One command runs the whole loop on devnet.</strong> The customer is software, the good is a verdict worth more than its price, and the payment is real.</p>
+  <div class="foot">RugGuard · github.com/&lt;repo&gt; · screening BONK (DezX…B263)</div><div class="pageno">5 / 5</div>
+</section>
+
+</body>
+</html>

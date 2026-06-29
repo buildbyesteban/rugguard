@@ -62,6 +62,68 @@ async function main() {
   if (env.LLM_MODEL) llmOpts.LLM_MODEL = str(env.LLM_MODEL)
   if (trace) llmOpts.TRACE = str(trace)
 
+  // ── Rug-check market (BUYER_SERVICE=rugcheck) — the headline fork ────────────────────────────────
+  // A Solana token rug-check oracle: two seller personas compete to screen a mint (fast scanner vs
+  // premium auditor); an INDEPENDENT verifier re-reads the chain and gates the escrow release; the
+  // buyer pays the winning seller (escrow) AND the verifier (flat fee) on-chain. A graph, not a pair.
+  if ((env.BUYER_SERVICE ?? '') === 'rugcheck') {
+    const rugRpc = env.RUGCHECK_RPC_URL ?? ''           // mainnet read RPC (Helius etc.); '' → public default
+    const verifierWallet = env.VERIFIER_WALLET ?? ''    // where the verifier's fee lands (node scripts/setup.js)
+    const rugSellers = ['seller-scanner', 'seller-auditor']
+    // Real mainnet mints to rotate through. Default: BONK (authorities renounced — should read LOW risk).
+    const mints = (env.BUYER_ARGS || env.BUYER_ARG || 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263')
+      .split(',').map((s) => s.trim()).filter(Boolean)
+
+    const rugSeller = (name: string) =>
+      agent(name, {
+        SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str(name),
+        SERVICES: str('rugcheck'), SERVICE: str('rugcheck'),
+        ...(rugRpc ? { RUGCHECK_RPC_URL: str(rugRpc) } : {}),
+        ...llmOpts,
+      })
+    const verifierAgent = agent('verifier-agent', {
+      AGENT_NAME: str('verifier-agent'),
+      ...(rugRpc ? { RUGCHECK_RPC_URL: str(rugRpc) } : {}),
+      ...llmOpts,
+    })
+    const rugBuyerOpts: Record<string, unknown> = {
+      BUYER_KEYPAIR_B58: str(keypair), AGENT_NAME: str('buyer-agent'), SOLANA_RPC_URL: str(rpc),
+      SELLER_WALLET: str(wallet),
+      BUYER_MAX_SOL: f64(Number(env.BUYER_MAX_SOL ?? '0.001')),
+      BUYER_SERVICE: str('rugcheck'),
+      BUYER_ARG: str(mints[0]),
+      ...(mints.length > 1 ? { BUYER_ARGS: str(mints.join(',')) } : {}),
+      MARKET_SELLERS: str(rugSellers.join(',')),
+      VERIFIER_NAME: str('verifier-agent'),
+      ...(verifierWallet ? { VERIFIER_WALLET: str(verifierWallet) } : {}),
+      ...(env.VERIFY_FEE_SOL ? { VERIFY_FEE_SOL: f64(Number(env.VERIFY_FEE_SOL)) } : {}),
+      ...llmOpts,
+    }
+
+    const rres = await fetch(`${BASE}/api/v1/local/session`, {
+      method: 'POST', headers: AUTH,
+      body: JSON.stringify({
+        agentGraphRequest: {
+          agents: [agent('buyer-agent', rugBuyerOpts), rugSeller('seller-scanner'), rugSeller('seller-auditor'), verifierAgent],
+        },
+        namespaceProvider: { type: 'create_if_not_exists', namespaceRequest: { name: NS } },
+        execution: { mode: 'immediate' },
+      }),
+    })
+    if (!rres.ok) throw new Error(`session create failed: ${rres.status} ${await rres.text()}`)
+    const { sessionId } = await rres.json() as { sessionId: string }
+
+    console.log(`\n✅ Market session ${sessionId} — rug-check: buyer + seller-scanner, seller-auditor + verifier-agent.`)
+    console.log(`   screening mint(s): ${mints.join(', ')}`)
+    console.log(`   receive wallet: ${wallet}${verifierWallet ? `   verifier wallet: ${verifierWallet}` : ''}`)
+    console.log('   Buyer WANTs a rug-check; sellers bid; the verifier re-reads the chain; release only on a pass.\n')
+    console.log('   Watch the market:')
+    console.log('     docker logs -f buyer-agent       # WANT → AWARD → DEPOSITED → (verify) → RELEASED + verifier paid')
+    console.log('     docker logs -f verifier-agent    # VERIFIED ok=true|false (independent on-chain re-check)')
+    console.log('   Set TRACE=1 in .env to see the coral_* calls + Explorer links.\n')
+    return
+  }
+
   // Every seller shares the receive wallet + RPC; persona/floor/inventory come from each toml default.
   const seller = (name: string) =>
     agent(name, { SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str(name), ...llmOpts })

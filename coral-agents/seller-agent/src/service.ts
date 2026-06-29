@@ -4,9 +4,14 @@
 // Input:  the buyer's request string
 // Output: your service's response string (JSON, plain text, whatever)
 //
-// Default: Jupiter DEX swap quote (SOL → USDC) — no API key needed
+// HEADLINE SERVICE: `rugcheck <mint>` — a Solana token rug-check oracle. The seller reads the mint's
+// on-chain facts (mint/freeze authority, supply, holder concentration) and an LLM turns them into a
+// risk verdict the buyer pays for. The read is mainnet (where real tokens live); settlement is devnet.
 
-const KNOWN_SERVICES = new Set(['jupiter', 'coingecko', 'news', 'inference', 'claude', 'txline'])
+import { fetchTokenFacts, scoreFacts } from '@pay/agent-runtime'
+import { complete, parseJsonReply } from '@pay/agent-runtime'
+
+const KNOWN_SERVICES = new Set(['rugcheck', 'jupiter', 'coingecko', 'news', 'inference', 'claude', 'txline'])
 
 export async function deliverService(request: string): Promise<string> {
   // The request may NAME a service as its first token — that's how the human checkout's
@@ -20,6 +25,8 @@ export async function deliverService(request: string): Promise<string> {
   const payload = named ? rest.join(' ') : request
 
   switch (service) {
+    case 'rugcheck':
+      return rugcheckService(payload)
     case 'jupiter':
       return jupiterSwapQuote(payload)
     case 'coingecko':
@@ -34,6 +41,55 @@ export async function deliverService(request: string): Promise<string> {
     default:
       return jupiterSwapQuote(payload)
   }
+}
+
+// Token rug-check oracle — the headline service. Given a Solana token mint, read its on-chain facts
+// (mint authority, freeze authority, supply, holder concentration) READ-ONLY from mainnet, score the
+// risk deterministically, then have the LLM write a one-line human verdict on top. The buyer pays a
+// micropayment per screen; settlement is devnet escrow. The report carries the raw `facts` so the
+// verifier agent can re-fetch the chain and confirm the seller didn't lie before the buyer releases.
+//
+//   "rugcheck <mintAddress>"  → { service:'rugcheck', mint, risk:{score,level}, facts, verdict, signals }
+async function rugcheckService(request: string): Promise<string> {
+  const mint = request.trim().split(/\s+/)[0] ?? ''
+  if (!mint) return JSON.stringify({ service: 'rugcheck', error: 'no mint address provided' })
+
+  let facts
+  try {
+    facts = await fetchTokenFacts(mint, process.env.RUGCHECK_RPC_URL || undefined)
+  } catch (e) {
+    return JSON.stringify({ service: 'rugcheck', mint, error: `could not read mint: ${(e as Error).message}` })
+  }
+
+  const risk = scoreFacts(facts)
+
+  // LLM writes the human-facing call ON TOP of the deterministic score (model proposes, code disposes
+  // — the score and signals are code-derived, so a prompt-injected token name can't fake a verdict).
+  // Falls back to the deterministic level if no LLM key/credits, so the demo always renders.
+  let verdict = `${risk.level} (risk score ${risk.score}/100)`
+  try {
+    const out = await complete({
+      system:
+        'You are a Solana token risk analyst. From the on-chain facts and computed signals, write ONE ' +
+        'plain-English sentence (max 30 words) a buyer can act on. Reply ONLY JSON {"verdict":"..."}.',
+      user: `mint=${mint}\nrisk=${JSON.stringify(risk)}\nfacts=${JSON.stringify(facts)}`,
+      maxTokens: 120,
+    })
+    const parsed = parseJsonReply<{ verdict?: string }>(out)
+    if (parsed?.verdict) verdict = parsed.verdict.trim()
+  } catch {
+    /* keep the deterministic verdict */
+  }
+
+  return JSON.stringify({
+    service: 'rugcheck',
+    mint,
+    risk: { score: risk.score, level: risk.level },
+    verdict,
+    signals: risk.signals,
+    facts, // raw, independently-verifiable — the verifier re-fetches and compares against this
+    timestamp: new Date().toISOString(),
+  })
 }
 
 // Claude inference — resell LLM completions for SOL. This is the on-thesis

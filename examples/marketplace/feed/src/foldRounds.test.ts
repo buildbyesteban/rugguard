@@ -69,4 +69,42 @@ describe('foldRounds', () => {
     expect(r.status).toBe('bidding')
     expect(r.declined).toEqual([]) // bidding still open → not yet declined
   })
+
+  // ── rug-check verification leg ──────────────────────────────────────────────
+  const report = JSON.stringify({ service: 'rugcheck', mint: 'DezX', risk: { score: 10, level: 'LOOKS OK' } })
+  const rugBase: RawMessage[] = [
+    { sender: 'buyer-agent', text: 'WANT round=5 service=rugcheck arg=DezX budget=0.001' },
+    { sender: 'seller-scanner', text: 'BID round=5 price=0.0002 by=seller-scanner' },
+    { sender: 'buyer-agent', text: 'AWARD round=5 to=seller-scanner' },
+    { sender: 'seller-scanner', text: 'ESCROW_REQUIRED round=5 reference=R5 seller=7jwB amount=0.0002 deadline=600' },
+    { sender: 'buyer-agent', text: 'DEPOSITED round=5 reference=R5 buyer=47Dp sig=dep5' },
+    { sender: 'seller-scanner', text: `DELIVERED round=5 ${report}` },
+    { sender: 'buyer-agent', text: `VERIFY round=5 seller=seller-scanner report=${Buffer.from(report).toString('base64')}` },
+  ]
+
+  it('confirmed verdict → release + verifier fee, status settled', () => {
+    const msgs: RawMessage[] = [
+      ...rugBase,
+      { sender: 'verifier-agent', text: 'VERIFIED round=5 ok=true seller=seller-scanner note=on-chain facts confirmed' },
+      { sender: 'buyer-agent', text: 'RELEASED round=5 sig=rel5' },
+      { sender: 'buyer-agent', text: 'VERIFIER_PAID round=5 sig=fee5' },
+    ]
+    const r = foldRounds(msgs, ['seller-scanner', 'seller-auditor']).find((x) => x.round === 5)!
+    expect(r.verdict).toEqual({ ok: true, seller: 'seller-scanner', note: 'on-chain facts confirmed' })
+    expect(r.verifierPaid?.sig).toBe('fee5')
+    expect(r.release?.sig).toBe('rel5')
+    expect(r.status).toBe('settled')
+  })
+
+  it('failed verdict → rejected, no release', () => {
+    const msgs: RawMessage[] = [
+      ...rugBase,
+      { sender: 'verifier-agent', text: 'VERIFIED round=5 ok=false seller=seller-scanner note=mintAuthorityRenounced mismatch' },
+      { sender: 'seller-scanner', text: 'WITHHELD round=5 reason=verification-failed' },
+    ]
+    const r = foldRounds(msgs).find((x) => x.round === 5)!
+    expect(r.verdict?.ok).toBe(false)
+    expect(r.status).toBe('rejected')
+    expect(r.release).toBeUndefined()
+  })
 })

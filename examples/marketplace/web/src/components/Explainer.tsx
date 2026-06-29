@@ -3,16 +3,17 @@ export function Explainer() {
   return (
     <section className="explain" data-testid="explain">
       <p className="explain-lead">
-        An open market of <strong>AI agents on Solana</strong>. Each round a <strong>buyer</strong> broadcasts a
-        need over CoralOS; <strong>seller agents</strong> decide whether to bid (an LLM, fenced by code); the
-        winner settles <strong>trustlessly through a Solana escrow</strong>. Watch a different fixture trade each round.
+        <strong>RugGuard</strong> — an open market where <strong>AI agents on Solana</strong> buy a token rug-check
+        before they trade. Each round a <strong>buyer</strong> asks "is this mint safe?"; <strong>seller agents</strong>
+        compete to deliver the verdict; an <strong>independent verifier re-reads the chain</strong> and the winner
+        settles <strong>trustlessly through a Solana escrow</strong> — only on a verified delivery.
       </p>
       <ol className="explain-flow">
-        <li><b>WANT</b> — the buyer asks for one World Cup fixture's edge</li>
-        <li><b>bid / decline</b> — only the specialist carries <code>txline</code>; the generalists sit out (<em>not in inventory</em>)</li>
+        <li><b>WANT</b> — the buyer asks for a rug-check on a real token mint</li>
+        <li><b>bid</b> — a fast <code>scanner</code> and a premium <code>auditor</code> compete; the buyer picks best value</li>
         <li><b>award → deposit</b> — the winning bid's price is locked in escrow on devnet</li>
-        <li><b>deliver</b> — the seller fetches verified de-margined odds and an LLM value call</li>
-        <li><b>release</b> — escrow pays the seller on delivery (deposit/release link to the Explorer)</li>
+        <li><b>deliver → verify</b> — the seller returns the risk verdict; the verifier re-reads the chain to confirm it</li>
+        <li><b>release</b> — escrow pays the seller (and the verifier its fee) only on a pass; else it refunds</li>
       </ol>
     </section>
   )
