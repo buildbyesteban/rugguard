@@ -4,10 +4,10 @@ A natural, spoken script — read it start to finish like you're talking to a fr
 Screen-record the dashboard at `http://localhost:5180` (clean URL, no `?session=`).
 Roughly 3 minutes. Paste the three tokens in order; talk over the ~60–90s each round takes.
 
-**Tokens to paste, in order:**
-1. 🟢 WIF — `EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm`
-2. 🟡 MBAPEPE — `8FkKnfk7H2Ebgphq4dY3TS1RJ4Bw2kW3Y6Mwa7M3pump`
-3. 🔴 USDC — `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
+**Tokens to paste, in order** (a safe one, then the two ways a token rugs):
+1. 🟢 WIF — `EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm`  (safe)
+2. 🔴 MBAPEPE — `8FkKnfk7H2Ebgphq4dY3TS1RJ4Bw2kW3Y6Mwa7M3pump`  (rug by concentration — one whale)
+3. 🔴 USDC — `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`  (rug by control — mint/freeze)
 
 ---
 
@@ -29,11 +29,11 @@ Roughly 3 minutes. Paste the three tokens in order; talk over the ~60–90s each
 >
 > *(Paste MBAPEPE.)*
 >
-> Now let's try something riskier — a random memecoin off pump.fun. Same flow… but watch the verdict this time. CAUTION. One single wallet holds more than half the entire supply. That's someone who can crash the price whenever they want — and the agent flags it before going anywhere near it.
+> Now let's try a random memecoin off pump.fun. Same flow… but watch the verdict this time — HIGH RISK. One single wallet holds more than half the entire supply. That's someone who can dump and crash the price whenever they want — and that's how most memecoins actually rug. The agent catches it before going anywhere near it.
 >
 > *(Paste USDC.)*
 >
-> And one more — a token where the creators still hold the keys, meaning they can mint more or freeze your wallet at any time. RugGuard calls it HIGH RISK, the verifier agrees, and the buyer just walks away. Exactly what you'd want it to do.
+> And here's a completely different way a token can be dangerous — one where the creators still hold the keys, so they can mint more or freeze your wallet at any time. Also HIGH RISK, the verifier agrees, and the buyer walks away. Two different rug traps — both caught.
 >
 > *(Click the "release" and "verifier fee" links to open the explorer.)*
 >
@@ -45,7 +45,7 @@ Roughly 3 minutes. Paste the three tokens in order; talk over the ~60–90s each
 
 ### While recording — make sure these show up
 - Round 1 (WIF): the risk gauge, the ✓ mint/freeze flags, and the **VERIFIED ✓** badge
-- Round 2 (MBAPEPE): the **top-holder %** and the amber **CAUTION**
+- Round 2 (MBAPEPE): the **top-holder %** and the red **HIGH RISK**
 - Round 3 (USDC): the red **HIGH RISK**
 - Click **release ↗** and **verifier fee ↗** so the Solana explorer opens on a real transaction
 - End on the RugGuard header + the repo URL: github.com/syedhassan125/rugguard
@@ -56,5 +56,5 @@ Roughly 3 minutes. Paste the three tokens in order; talk over the ~60–90s each
 
 ### Delivery tips
 - Optional but nice: show your face for the first line ("Hey, I'm Hassan…"), then cut to the screen recording.
-- Don't rush the WIF → MBAPEPE → USDC moment — that green-to-red arc is the whole story.
+- Don't rush the WIF → MBAPEPE → USDC moment — safe, then the two ways a token rugs, is the whole story.
 - If a round is slow, keep talking; trim the dead air afterwards.
