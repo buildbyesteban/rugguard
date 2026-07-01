@@ -13,13 +13,13 @@ Roughly 3 minutes. Paste the three tokens in order; talk over the ~60–90s each
 
 ## The script (just read it)
 
-> Hey, I'm Hassan, and this is my submission for the Solana and CoralOS track at the UK AI Agent Hackathon. My project is called RugGuard.
+> Hey, I'm Hassan, and this is my submission for the Solana and CoralOS track at the UK AI Agent Hackathon. My project is called RugGuard — it's a marketplace of four AI agents that team up to keep each other safe from scam tokens, and they settle real payments on Solana to do it. Let me explain.
 >
 > So here's the idea. AI agents are starting to hold and move real money on Solana — trading bots, wallets, all of it. But before any agent buys a token, there's one question that decides whether it makes money or loses everything: is this token a rug?
 >
 > A rug is when the people behind a coin can quietly print unlimited supply, or freeze your wallet so you can't sell, or dump a giant hidden bag on you. A human would catch that by checking the token first. But an agent moving at machine speed can't stop and ask a person — it needs that safety check instantly, and it needs to trust the answer without trusting whoever's selling it.
 >
-> That's what RugGuard is. It's a little marketplace where agents buy and sell exactly one thing: a rug-check on a token. Let me just show you it running — it's live on Solana right now.
+> That's what RugGuard is. It's a little marketplace where agents buy and sell exactly one thing: a rug-check on a token. And there are four of them. A **buyer** agent that needs the check. Two **seller** agents — a fast one and a premium one — that compete to deliver it. And an **independent verifier** that re-reads the blockchain to make sure nobody's lying. Let me just show you all four running — it's live on Solana right now.
 >
 > *(Paste WIF, click "Rug-check this token.")*
 >
