@@ -121,15 +121,24 @@ export function scoreFacts(f: TokenFacts): RiskAssessment {
     score += 25
     signals.push('Freeze authority is active — the team can freeze your tokens so you cannot sell.')
   }
+  // Holder concentration. For a memecoin whose authorities are renounced, this IS the rug vector: a
+  // wallet holding the majority can dump and collapse the price at any moment. So a single majority
+  // holder is scored as HIGH RISK on its own (55), independent of the authority checks.
   if (f.topHolderPct >= 50) {
-    score += 25
-    signals.push(`A single wallet holds ${f.topHolderPct}% of supply — one seller can crash the price.`)
-  } else if (f.topHolderPct >= 25) {
-    score += 12
+    score += 55
+    signals.push(`A single wallet holds ${f.topHolderPct}% of supply — majority control; it can dump and crash the price at will.`)
+  } else if (f.topHolderPct >= 35) {
+    score += 38
+    signals.push(`The largest wallet holds ${f.topHolderPct}% of supply — near-majority concentration; high dump risk.`)
+  } else if (f.topHolderPct >= 20) {
+    score += 20
     signals.push(`The largest wallet holds ${f.topHolderPct}% of supply — concentrated ownership.`)
   }
-  if (f.top10Pct >= 80) {
-    score += 15
+  if (f.top10Pct >= 90) {
+    score += 20
+    signals.push(`The top holders hold ${f.top10Pct}% of supply combined — almost no free float, trivially easy to move.`)
+  } else if (f.top10Pct >= 70) {
+    score += 12
     signals.push(`The top holders hold ${f.top10Pct}% of supply combined — thin float, easy to move.`)
   }
 

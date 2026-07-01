@@ -30,6 +30,19 @@ describe('scoreFacts', () => {
     expect(r.score).toBeGreaterThanOrEqual(55)
   })
 
+  it('a single majority holder alone is HIGH RISK, even with authorities renounced', () => {
+    // The memecoin-rug case: pump.fun-style renounced authorities but one wallet holds the bag.
+    const r = scoreFacts({ ...base, topHolderPct: 51, top10Pct: 100 })
+    expect(r.level).toBe('HIGH RISK')
+    expect(r.signals.join(' ')).toMatch(/majority control/i)
+  })
+
+  it('a moderate top holder is CAUTION, not HIGH RISK', () => {
+    const r = scoreFacts({ ...base, topHolderPct: 30, top10Pct: 75 })
+    expect(r.level).toBe('CAUTION')
+    expect(r.score).toBeLessThan(55)
+  })
+
   it('a non-existent mint is maximally risky', () => {
     const r = scoreFacts({ ...base, exists: false })
     expect(r.score).toBe(100)
