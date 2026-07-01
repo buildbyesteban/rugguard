@@ -1,63 +1,60 @@
-# RugGuard — 3-minute demo video script (record-ready)
+# RugGuard — 3-minute demo video script
 
-**Structure:** Personal intro → Problem → Solution → Live Demo → Proof → Close.
-**Lead with the settlement. Don't pitch the plumbing.**
-**Total ≈ 3:00.** Screen-record the dashboard (http://localhost:5180). One voice, calm and clear.
+A natural, spoken script — read it start to finish like you're talking to a friend.
+Screen-record the dashboard at `http://localhost:5180` (clean URL, no `?session=`).
+Roughly 3 minutes. Paste the three tokens in order; talk over the ~60–90s each round takes.
 
-**Before you hit record:**
-- Dashboard open at a **clean** URL: `http://localhost:5180` (no `?session=` on the end).
-- Have the three addresses below copied somewhere easy to paste.
-- Each round takes ~60–90s — you'll paste, talk over the wait, then react to the result. (You can lightly trim the dead time in editing.)
-
-**Demo tokens (paste in this order):**
+**Tokens to paste, in order:**
 1. 🟢 WIF — `EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm`
 2. 🟡 MBAPEPE — `8FkKnfk7H2Ebgphq4dY3TS1RJ4Bw2kW3Y6Mwa7M3pump`
 3. 🔴 USDC — `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
 
 ---
 
-## 0:00 – 0:20 — Intro  *(you on camera, or voice over the dashboard)*
+## The script (just read it)
 
-> "Hey, I'm Hassan — and this is my submission for the Solana and CoralOS track at the UK AI Agent Hackathon. My project is called **RugGuard**. It's an open marketplace where AI agents pay each other, on-chain, to check whether a token is safe *before* they trade it — no humans in the loop. Let me show you the problem it solves, then run it live."
-
-## 0:20 – 0:45 — Problem
-
-> "Right now, AI agents on Solana are starting to hold and move real money. But before any of them buys a token, there's one question that decides everything: is this a rug? A rug pull is when a token's creators can secretly mint infinite supply, freeze your wallet, or dump a hidden bag — and you lose everything. A human would check a block explorer first. An autonomous agent trading at machine speed can't stop and ask a person — it needs that answer instantly, and it needs to trust it without trusting the seller."
-
-## 0:45 – 1:10 — Solution  *(gesture at the explainer panel)*
-
-> "Here's how RugGuard solves it. A buyer agent asks 'is this token safe?'. Two seller agents — a fast scanner and a premium auditor — compete to deliver the verdict from the token's real on-chain data. The buyer picks the best value and locks payment in a Solana escrow.
+> Hey, I'm Hassan, and this is my submission for the Solana and CoralOS track at the UK AI Agent Hackathon. My project is called RugGuard.
 >
-> And the key move is this: an **independent verifier agent re-reads the blockchain itself** and has to confirm the report before the escrow pays out. So a seller can never get paid for a lie — and the verifier earns a fee for keeping the market honest. It's a self-policing economy of agents."
-
-## 1:10 – 2:30 — Live demo  *(the core — narrate as it happens)*
-
-**🟢 Round 1 — a safe token.** *(Paste WIF, click "Rug-check this token.")*
-> "Let's screen a real token — dogwifhat. Watch: both sellers bid, the cheaper scanner wins, payment goes into escrow… the report comes back **LOOKS OK** — mint and freeze authority renounced, ownership nicely spread across holders. The verifier re-checks the chain, confirms it, and the escrow releases. Green light."
-
-**🟡 Round 2 — a risky one.** *(Paste MBAPEPE.)*
-> "Now a random pump.fun coin. Same process — but look at the verdict: **CAUTION**. One single wallet holds over half the supply. That's a wallet that can crash the price instantly. The agent flags it before touching it."
-
-**🔴 Round 3 — the catch.** *(Paste USDC.)*
-> "And here's a token where the creators still hold the keys — they can mint more or freeze your wallet at any time. RugGuard returns **HIGH RISK**, the verifier agrees, and the buyer walks away. That's the system doing its job."
-
-## 2:30 – 2:50 — Proof  *(click a settlement link)*
-
-> "And none of this is a mock-up. Every deal settles on-chain — here's the actual escrow release on the Solana explorer, and here's the fee paid to the verifier. Real transactions, two settlements per deal, zero humans in the loop."
-
-## 2:50 – 3:00 — Close  *(RugGuard title / repo on screen)*
-
-> "So that's RugGuard — a service agents actually want, and an economy that stays honest under dispute, built on CoralOS and Solana. It's fully open-source and runs on devnet with one command. I'm Hassan — thanks for watching."
+> So here's the idea. AI agents are starting to hold and move real money on Solana — trading bots, wallets, all of it. But before any agent buys a token, there's one question that decides whether it makes money or loses everything: is this token a rug?
+>
+> A rug is when the people behind a coin can quietly print unlimited supply, or freeze your wallet so you can't sell, or dump a giant hidden bag on you. A human would catch that by checking the token first. But an agent moving at machine speed can't stop and ask a person — it needs that safety check instantly, and it needs to trust the answer without trusting whoever's selling it.
+>
+> That's what RugGuard is. It's a little marketplace where agents buy and sell exactly one thing: a rug-check on a token. Let me just show you it running — it's live on Solana right now.
+>
+> *(Paste WIF, click "Rug-check this token.")*
+>
+> So I'll paste in a real token — this is dogwifhat. The moment I hit go, a buyer agent asks the market "is this safe?", and two seller agents compete to answer — a fast one and a premium one. The cheaper one wins the bid, and the buyer locks its payment into a Solana escrow. The seller reads the token's actual on-chain data and sends back a verdict… and there it is — LOOKS OK. Mint and freeze are renounced, the ownership is spread out, nothing scary.
+>
+> But here's the part I'm most proud of. The buyer doesn't just take the seller's word for it. There's a third agent — an independent verifier — that re-reads the blockchain itself to confirm the report is true. Only when it says "verified" does the escrow actually pay out. So a seller can never get paid for lying, and the verifier earns a small fee for keeping everyone honest. A pair of agents becomes a whole self-policing economy.
+>
+> *(Paste MBAPEPE.)*
+>
+> Now let's try something riskier — a random memecoin off pump.fun. Same flow… but watch the verdict this time. CAUTION. One single wallet holds more than half the entire supply. That's someone who can crash the price whenever they want — and the agent flags it before going anywhere near it.
+>
+> *(Paste USDC.)*
+>
+> And one more — a token where the creators still hold the keys, meaning they can mint more or freeze your wallet at any time. RugGuard calls it HIGH RISK, the verifier agrees, and the buyer just walks away. Exactly what you'd want it to do.
+>
+> *(Click the "release" and "verifier fee" links to open the explorer.)*
+>
+> And none of this is faked — every deal settles on-chain. Here's the actual payment to the seller on the Solana explorer, and here's the fee paid to the verifier. Two real settlements, every round, with no human anywhere in the loop.
+>
+> So that's RugGuard — a service agents genuinely need, an economy that stays honest even under a dispute, built on CoralOS and Solana. It's fully open-source and a judge can run the whole thing with one command. I'm Hassan — thanks for watching.
 
 ---
 
-### On-screen checklist while recording
-- [ ] Round 1 shows the **risk gauge**, ✓ mint/freeze flags, and **VERIFIED ✓** badge
-- [ ] Round 2 clearly shows the **top-holder %** and the amber CAUTION
-- [ ] Round 3 shows the red **HIGH RISK**
-- [ ] Click **release ↗** and **verifier fee ↗** so the explorer transactions appear
-- [ ] End on the RugGuard header + repo URL: github.com/syedhassan125/rugguard
+### While recording — make sure these show up
+- Round 1 (WIF): the risk gauge, the ✓ mint/freeze flags, and the **VERIFIED ✓** badge
+- Round 2 (MBAPEPE): the **top-holder %** and the amber **CAUTION**
+- Round 3 (USDC): the red **HIGH RISK**
+- Click **release ↗** and **verifier fee ↗** so the Solana explorer opens on a real transaction
+- End on the RugGuard header + the repo URL: github.com/syedhassan125/rugguard
 
-### If asked in Q&A / judging
-- **"USDC isn't a rug!"** → "Correct — RugGuard flags *who still holds mint/freeze power*. For a regulated stablecoin that's by design; for an anonymous memecoin it's the #1 rug signal. Same check, context decides."
-- **"Is the money real?"** → "Settlement is devnet test SOL — real on-chain transactions, safe play money, exactly as the hackathon expects. Flip to mainnet and it's real funds, same code."
+### If a judge pushes back
+- **"USDC isn't a rug."** → "Right — RugGuard flags whoever still holds mint and freeze power. For a regulated stablecoin that's by design; for an anonymous memecoin it's the number-one rug signal. Same check — context decides."
+- **"Is the money real?"** → "It settles in devnet test SOL — real on-chain transactions, safe play money, exactly what the hackathon asks for. Point it at mainnet and it's real funds, same code."
+
+### Delivery tips
+- Optional but nice: show your face for the first line ("Hey, I'm Hassan…"), then cut to the screen recording.
+- Don't rush the WIF → MBAPEPE → USDC moment — that green-to-red arc is the whole story.
+- If a round is slow, keep talking; trim the dead air afterwards.
